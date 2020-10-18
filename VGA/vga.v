@@ -11,7 +11,7 @@ localparam v_bp = 20;					//vertikalni back porch
 */
 //VGA 640x480 casovani pro nastaveni signalu h_sync a v_sync, ktere ridi kdy se tiskne obraz a kdy ne
 /*
-localparam horizontal = 640;			//sirka obrazu v pixelec
+localparam horizontal = 640;			//sirka obrazu v pixelechhh
 localparam vertical = 480;				//vyska obrazu v pixelech
 localparam h_fp = 16;					//horizontalni front porch
 localparam h_sw = 96;					//horizontalni sync width
