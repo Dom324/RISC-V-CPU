@@ -1,0 +1,90 @@
+
+icetime topological timing analysis report
+==========================================
+
+Info: max_span_hack is enabled: estimate is conservative.
+
+Report for critical path:
+-------------------------
+
+        lc40_14_25_7 (LogicCell40) [clk] -> lcout: 0.896 ns
+     0.896 ns net_55395 (vga_output.horizontal_line[1])
+        t723 (LocalMux) I -> O: 0.486 ns
+        inmux_14_25_59513_59557 (InMux) I -> O: 0.382 ns
+        lc40_14_25_3 (LogicCell40) in0 -> lcout: 0.662 ns
+     2.426 ns net_55391 ($abc$4809$n249)
+        odrv_14_25_55391_31731 (Odrv12) I -> O: 0.796 ns
+        t730 (Sp12to4) I -> O: 0.662 ns
+        t729 (Span4Mux_v4) I -> O: 0.548 ns
+        t728 (Span4Mux_v4) I -> O: 0.548 ns
+        t727 (LocalMux) I -> O: 0.486 ns
+        inmux_11_20_46663_46701 (InMux) I -> O: 0.382 ns
+        t47 (CascadeMux) I -> O: 0.000 ns
+        lc40_11_20_1 (LogicCell40) in2 -> carryout: 0.341 ns
+     6.188 ns t48
+        lc40_11_20_2 (LogicCell40) carryin -> carryout: 0.186 ns
+     6.375 ns t50
+        lc40_11_20_3 (LogicCell40) carryin -> carryout: 0.186 ns
+     6.561 ns t52
+        lc40_11_20_4 (LogicCell40) carryin -> carryout: 0.186 ns
+     6.747 ns t54
+        lc40_11_20_5 (LogicCell40) carryin -> carryout: 0.186 ns
+     6.933 ns t56
+        lc40_11_20_6 (LogicCell40) carryin -> carryout: 0.186 ns
+     7.119 ns t58
+        lc40_11_20_7 (LogicCell40) carryin -> carryout: 0.186 ns
+     7.305 ns net_46734 ($auto$alumacc.cc:474:replace_alu$1463.C[8])
+        t60 (ICE_CARRY_IN_MUX) carryinitin -> carryinitout: 0.289 ns
+        lc40_11_21_0 (LogicCell40) carryin -> carryout: 0.186 ns
+     7.780 ns t62
+        lc40_11_21_1 (LogicCell40) carryin -> carryout: 0.186 ns
+     7.966 ns t64
+        lc40_11_21_2 (LogicCell40) carryin -> carryout: 0.186 ns
+     8.152 ns net_46827 ($abc$4809$n650$2)
+        inmux_11_21_46827_46837 (InMux) I -> O: 0.382 ns
+        lc40_11_21_3 (LogicCell40) in3 -> lcout: 0.465 ns
+     9.000 ns net_42668 ($abc$4809$n650)
+        odrv_11_21_42668_46892 (Odrv4) I -> O: 0.548 ns
+        t409 (Span4Mux_h4) I -> O: 0.465 ns
+        t408 (LocalMux) I -> O: 0.486 ns
+        inmux_12_24_51229_51288 (InMux) I -> O: 0.382 ns
+        t139 (CascadeMux) I -> O: 0.000 ns
+        lc40_12_24_4 (LogicCell40) in2 -> lcout: 0.558 ns
+    11.440 ns net_47115 ($abc$4809$n176)
+        odrv_12_24_47115_46898 (Odrv4) I -> O: 0.548 ns
+        t446 (LocalMux) I -> O: 0.486 ns
+        inmux_12_22_51007_51036 (InMux) I -> O: 0.382 ns
+        t136 (CascadeMux) I -> O: 0.000 ns
+        lc40_12_22_3 (LogicCell40) in2 -> lcout: 0.558 ns
+    13.414 ns net_46868 ($abc$4809$n175)
+        odrv_12_22_46868_23208 (Odrv12) I -> O: 0.796 ns
+        t423 (LocalMux) I -> O: 0.486 ns
+        inmux_13_22_55069_55136 (InMux) I -> O: 0.382 ns
+        lc40_13_22_7 (LogicCell40) in1 -> lcout: 0.589 ns
+    15.667 ns net_50949 ($abc$4809$n166)
+        odrv_13_22_50949_54537 (Odrv12) I -> O: 0.796 ns
+        t537 (LocalMux) I -> O: 0.486 ns
+        inmux_13_18_54590_54637 (InMux) I -> O: 0.382 ns
+        lc40_13_18_6 (LogicCell40) in0 -> lcout: 0.662 ns
+    17.993 ns net_50456 ($abc$4809$n187)
+        t525 (LocalMux) I -> O: 0.486 ns
+        inmux_13_19_54697_54760 (InMux) I -> O: 0.382 ns
+    18.862 ns net_54760 ($abc$4809$n187)
+        lc40_13_19_6 (LogicCell40) in0 [setup]: 0.589 ns
+    19.451 ns net_50579 (vga_output.pixel)
+
+Resolvable net names on path:
+     0.896 ns ..  1.764 ns vga_output.horizontal_line[1]
+     2.426 ns ..  5.847 ns $abc$4809$n249
+     7.305 ns ..  7.594 ns $auto$alumacc.cc:474:replace_alu$1463.C[8]
+     8.152 ns ..  8.535 ns $abc$4809$n650$2
+     9.000 ns .. 10.881 ns $abc$4809$n650
+    11.440 ns .. 12.856 ns $abc$4809$n176
+    13.414 ns .. 15.078 ns $abc$4809$n175
+    15.667 ns .. 17.332 ns $abc$4809$n166
+    17.993 ns .. 18.862 ns $abc$4809$n187
+                  lcout -> vga_output.pixel
+
+Total number of logic levels: 17
+Total path delay: 19.45 ns (51.41 MHz)
+
