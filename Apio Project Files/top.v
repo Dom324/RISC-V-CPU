@@ -17,10 +17,23 @@ module top (
     //nepouzite piny
 );
 
+    // drive USB pull-up resistor to '0' to disable USB
+      assign USBPU = 0;
+
     wire reset, keyboard_data, keyboard_clock, hsync, vsync, VGA_pixel, CLK_VGA;
 
-    // drive USB pull-up resistor to '0' to disable USB
-    assign USBPU = 0;
+    reset = PIN_5;
+    keyboard_data = PIN_12;
+    keyboard_clock = PIN_13,
+    assign PIN_10 = hsync;
+    assign PIN_11 = vsync;
+    assign PIN_14 = VGA_pixel;
+    assign PIN_15 = CLK_VGA;
+
+    pll CLK_VGA_PLL(CLK, , clk_VGA, );				//PLL obvod generujici CLK pro VGA obvod, 40MHz
+
+
+
 
 
   //SOS blikani na signalizaci, ze se kod nahral spravne
