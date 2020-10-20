@@ -22,9 +22,9 @@ module top (
 
     wire reset, keyboard_data, keyboard_clock, hsync, vsync, VGA_pixel, CLK_VGA;
 
-    reset = PIN_5;
-    keyboard_data = PIN_12;
-    keyboard_clock = PIN_13,
+    assign reset = PIN_5;
+    assign keyboard_data = PIN_12;
+    assign keyboard_clock = PIN_13;
     assign PIN_10 = hsync;
     assign PIN_11 = vsync;
     assign PIN_14 = VGA_pixel;
