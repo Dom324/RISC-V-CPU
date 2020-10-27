@@ -17,7 +17,7 @@ Do videopameti zatim lze zapisovat jen po 8 bitech
 */
 module memory(
     input CLK_cpu, mem_en,
-    input [1:0] store_size;
+    input [1:0] store_size,
     input [31:0] next_PC, mem_addr, write_data,
 
     //klavesnice

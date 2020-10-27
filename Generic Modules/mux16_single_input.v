@@ -1,7 +1,7 @@
 module mux16_single_input
-  (input [3:0] select,
-  input  [15:0] a,
-  output out);
+  (input wire [3:0] select,
+  input wire [15:0] a,
+  output reg out);
 
   always begin
 

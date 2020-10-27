@@ -6,11 +6,11 @@ module RAM1536x8(
   input RCLK_c, RCLKE_c, RE_c, WCLK_c, WCLKE_c, WE_c,
 	input [10:0] RADDR_c, WADDR_c,
   input [7:0] WDATA_IN,
-	output [7:0] RDATA_OUT
+	output reg [7:0] RDATA_OUT
 );
 
   reg RE_bank0, RE_bank1, RE_bank2, WE_bank0, WE_bank1, WE_bank2;
-  wire RDATA_bank0, RDATA_bank1, RDATA_bank2;
+  wire [7:0] RDATA_bank0, RDATA_bank1, RDATA_bank2;
 
 always @ (posedge RCLK_c) begin
 

@@ -1,7 +1,7 @@
 module mux8_single_input
   (input [2:0] select,
   input  [7:0] a,
-  output out);
+  output reg out);
 
   always begin
 

@@ -30,9 +30,26 @@ module top (
     assign PIN_14 = VGA_pixel;
     assign PIN_15 = CLK_VGA;
 
-    pll CLK_VGA_PLL(CLK, , clk_VGA, );				//PLL obvod generujici CLK pro VGA obvod, 40MHz
 
 
+    //PLL obvod generujici CLK pro VGA obvod, 40MHz
+    pll CLK_VGA_PLL(
+                    .REFERENCECLK(CLK),
+                    .PLLOUTCORE(),
+                    .PLLOUTGLOBAL(CLK_VGA),
+                    .RESET(0));
+    //PLL obvod generujici CLK pro VGA obvod, 40MHz
+
+
+    CPU RISC_V_CPU(
+                  .keyboard_data(keyboard_data),
+                  .keyboard_clock(keyboard_clock),
+                  .CLK_VGA(CLK_VGA),
+                  .CLK_CPU(CLK),
+                  .hsync(hsync),
+                  .vsync(vsync),
+                  .VGA_pixel(VGA_pixel)
+      );
 
 
 

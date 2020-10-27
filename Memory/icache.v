@@ -28,7 +28,7 @@ module icache(
     input [19:0] read_addr, write_addr,
     input [31:0] write_data,
     output reg cache_miss,
-    output reg [31:0] instr_out
+    output reg [31:0] RDATA_out
 );
 
     reg [7:0] RADDR_TAG, RADDR_CACHE;
@@ -37,7 +37,8 @@ module icache(
     reg [1:0] set_used;           //ktery set byl pouzit, 00 = A, 01 = B, 10 = C, 11 = D
     reg WE_tag, WE_setA, WE_setB, WE_setC, WE_setD;
     wire [15:0] tagA, tagB, tagC, tagD;
-    wire [31:0] read_data_setA, read_data_setB, read_data_setC, read_data_setD;
+    wire [31:0] RDATA_setA, RDATA_setB, RDATA_setC, RDATA_setD;
+    reg [31:0] MASK;
 
 always @ (posedge CLK_cpu) begin
 
@@ -73,9 +74,8 @@ always @ (posedge CLK_cpu) begin
 
     WE_tag = 0;
   //defaultne nastavit write enable porty na 0
-    TAG_OUT = 0;
     cache_miss = 0;
-    instr_out = 0;
+    RDATA_out = 0;
 
 
 
@@ -219,7 +219,7 @@ RAM256x32 icache_setA(.RCLK_c(CLK_cpu),
                       .WADDR_c(write_addr[9:2]),
                       .MASK_IN(0),
                       .WDATA_IN(write_data),
-                      .RDATA_OUT(read_data_setA)
+                      .RDATA_OUT(RDATA_setA)
                       );
 
 RAM256x16 icache_tagA(.RCLK_c(CLK_cpu),
@@ -245,7 +245,7 @@ RAM256x32 icache_setB(.RCLK_c(CLK_cpu),
                       .WADDR_c(write_addr[9:2]),
                       .MASK_IN(0),
                       .WDATA_IN(write_data),
-                      .RDATA_OUT(read_data_setB)
+                      .RDATA_OUT(RDATA_setB)
                       );
 
 RAM256x16 icache_tagB(.RCLK_c(CLK_cpu),
@@ -271,7 +271,7 @@ RAM256x32 icache_setC(.RCLK_c(CLK_cpu),
                       .WADDR_c(write_addr[9:2]),
                       .MASK_IN(0),
                       .WDATA_IN(write_data),
-                      .RDATA_OUT(read_data_setC)
+                      .RDATA_OUT(RDATA_setC)
                       );
 
 RAM256x16 icache_tagC(.RCLK_c(CLK_cpu),
@@ -297,7 +297,7 @@ RAM256x32 icache_setD(.RCLK_c(CLK_cpu),
                       .WADDR_c(write_addr[9:2]),
                       .MASK_IN(0),
                       .WDATA_IN(write_data),
-                      .RDATA_OUT(read_data_setD)
+                      .RDATA_OUT(RDATA_setD)
                       );
 
 RAM256x16 icache_tagD(.RCLK_c(CLK_cpu),
