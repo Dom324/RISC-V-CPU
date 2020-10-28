@@ -21,25 +21,25 @@ module memory(
     input [31:0] next_PC, mem_addr, write_data,
 
     //klavesnice
-    input[7:0] pressed_key,
+    input [7:0] pressed_key,
     output clean_key_buffer,
     //klavesnice
 
     //videopamet
-    output video_write_enable,
-    output [7:0] video_write_data,
-    output [10:0] video_write_addr,
+    output reg video_write_enable,
+    output reg [7:0] video_write_data,
+    output reg [10:0] video_write_addr,
     //videopamet
 
-    output stall,
-    output [31:0] instr_out, read_data,
+    output reg stall,
+    output [31:0] instr_out, read_data
 );
 
-  wire dcache_read_en, dcache_write_en, dcache_fetch, dcache_miss;
-  wire [31:0] dcache_write_data;
+  reg dcache_read_en, dcache_write_en, dcache_fetch, dcache_miss;
+  reg [31:0] dcache_write_data, dcache_write_addr, dcache_read_addr;
 
-  wire icache_fetch, icache_miss;
-  wire [31:0] icache_write_data;
+  reg icache_fetch, icache_miss;
+  reg [31:0] icache_write_data, icache_write_addr;
 
   reg busy;         //indikuje, zda je pamet uprostred zapisu, cteni, fetche
 
@@ -115,17 +115,17 @@ dcache L1D(
           .read_addr(mem_addr),
           .write_addr(mem_addr),
           .write_data(dcache_write_data),
-          .RDATA_out(read_data)
-          .TAG_OUT(),                     //doplnit
+          .RDATA_out(read_data),
+          .TAG_OUT()                     //doplnit
   );
 
-  icache L1D(
+  icache L1I(
             .CLK_cpu(CLK_cpu),
             .read_en(1),
             .fetch(icache_fetch),
             .cache_miss(icache_miss),
             .read_addr(next_PC),
-            .write_addr(nextPC),
+            .write_addr(),
             .write_data(icache_write_data),
             .RDATA_out(instr_out)
     );

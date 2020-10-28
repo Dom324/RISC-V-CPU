@@ -6,17 +6,17 @@ module regfile(
 );
 
   logic [31:0] registers [31:0];			//32x32 bits wide registers
-  
+
   assign rd1 = registers[ra1];
   assign rd2 = registers[ra2];
-  
+
 always_ff @ (negedge clk) begin
 
   if(we)
     if(wa != 0)
-	  registers[wa] = wd;
+	  registers[wa] <= wd;
 	else
-	  registers[0] = 0;
+	  registers[0] <= 0;
 
 end
 endmodule

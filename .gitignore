@@ -1,9 +1,8 @@
-.sconsign.dblite
-abc.history
-apio.ini
-hardware.asc
-hardware.bin
-hardware.blif
-hardware.out
-install_apio.bat
-install_apio.sh
+RISC_V_CPU_Implmnt
+RISC_V_CPU_sbt.project
+RISC_V_CPU_lse.prj
+RISC_V_CPU_syn.prd
+RISC_V_CPU_syn.prj
+stdout.log
+stdout.log.bak
+synlog.tcl
