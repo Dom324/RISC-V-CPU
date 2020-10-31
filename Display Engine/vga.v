@@ -24,16 +24,16 @@ localparam v_bp = 33;					//vertikalni back porch
 
 
 module vga(
-  input clk, reset,						//pro 1280x720 clk 74.25MHz, pro 640x480 clk 25.175MHz
-  input [15:0] pixel_data,
-  output reg pixel, h_sync, v_sync, newData, end_of_line, end_of_frame,
-  output reg [10:0] horizontal_line,
-  output reg [9:0] vertical_line
+  input CLK_VGA, reset,						//pro 1280x720 CLK_VGA 74.25MHz, pro 640x480 CLK_VGA 25.175MHz
+  input [15:0] pixel_row,
+  output reg pixel, h_sync, v_sync, newData, end_of_line, end_of_frame
+  //output reg [10:0] horizontal_line,
+  //output reg [9:0] vertical_line
 );
 
 //VGA 640x480 casovani pro nastaveni signalu h_sync a v_sync, ktere ridi kdy se tiskne obraz a kdy ne
 localparam horizontal = 800;			//sirka obrazu v pixelech
-localparam vertical = 601;				//vyska obrazu v pixelech
+localparam vertical = 600;				//vyska obrazu v pixelech
 localparam h_fp = 40;					//horizontalni front porch
 localparam h_sw = 128;					//horizontalni sync width
 localparam h_bp = 92;					//horizontalni back porch
@@ -43,11 +43,13 @@ localparam v_bp = 22;					//vertikalni back porch
 
   wire data_selected;
   reg [3:0] counter;
+  reg [10:0] horizontal_line;
+  reg [9:0] vertical_line;
 
-  mux16_single_input output_select(counter, pixel_data, data_selected);
+  mux16_single_input output_select(counter, pixel_row, data_selected);
 
 
-always @ (posedge clk) begin
+always @ (posedge CLK_VGA) begin
 
   if(!reset)begin
   //counter <= 15;

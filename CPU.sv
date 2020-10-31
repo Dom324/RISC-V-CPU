@@ -1,6 +1,6 @@
 module CPU(
   input keyboard_data, keyboard_clock,
-  input CLK_VGA, CLK_CPU,
+  input CLK_VGA, CLK_CPU, reset,
   output hsync, vsync, VGA_pixel
   );
 

@@ -1,5 +1,5 @@
 module ascii_to_pixel(
-  input reset, end_of_line, end_of_frame,
+  input end_of_line, end_of_frame,
   input [7:0] ascii,
   output reg [15:0] pixel_row
 );
@@ -18,7 +18,7 @@ else row = 0;
 
 end
 
-always #1 begin
+always_comb begin
 
   case(ascii)
 

@@ -87,7 +87,8 @@ assign USBPU = 1'b0;
                 .CLK_CPU(CLK_16mhz),
                 .hsync(hsync),
                 .vsync(vsync),
-                .VGA_pixel(VGA_pixel)
+                .VGA_pixel(VGA_pixel),
+                .reset(reset)
                 );
 
 
