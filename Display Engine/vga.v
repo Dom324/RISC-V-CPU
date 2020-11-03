@@ -26,7 +26,8 @@ localparam v_bp = 33;					//vertikalni back porch
 module vga(
   input CLK_VGA, reset,						//pro 1280x720 CLK_VGA 74.25MHz, pro 640x480 CLK_VGA 25.175MHz
   input [15:0] pixel_row,
-  output reg pixel, h_sync, v_sync, newData, end_of_line, end_of_frame
+  output reg pixel, h_sync, v_sync, newData, end_of_line, end_of_frame,
+  output reg [4:0] line_number
   //output reg [10:0] horizontal_line,
   //output reg [9:0] vertical_line
 );
@@ -48,6 +49,18 @@ localparam v_bp = 22;					//vertikalni back porch
 
   mux16_single_input output_select(counter, pixel_row, data_selected);
 
+always @(posedge CLK_VGA) begin
+
+  line_number = line_number;
+
+  if(end_of_line) begin
+    if(!end_of_frame) begin
+      if(line_number == 5'b10011) line_number = 5'b00000;
+      else line_number = line_number + 1;
+    end
+    else line_number = 0;
+  end
+end
 
 always @ (posedge CLK_VGA) begin
 

@@ -1,29 +1,16 @@
 module ascii_to_pixel(
-  input end_of_line, end_of_frame,
-  input [7:0] ascii,
-  output reg [15:0] pixel_row
+  input logic end_of_line, end_of_frame,
+  input logic [7:0] ascii,
+  input logic [4:0] line_number,
+  output logic [15:0] pixel_row
 );
-
-  reg [4:0] row;
-
-
-always @(posedge end_of_line) begin
-
-if(!end_of_frame) begin
-    if (row == 5'b10011)
-      row = 5'b00000;
-    else row = row + 1;
-end
-else row = 0;
-
-end
 
 always_comb begin
 
   case(ascii)
 
   8'h41: begin                   //A
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'h3FC0;
@@ -50,7 +37,7 @@ always_comb begin
 
 
   8'h42: begin                   //B
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'hFFC0;
@@ -76,7 +63,7 @@ always_comb begin
   end
 
   8'h43: begin                   //C
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'h3FC0;
@@ -102,7 +89,7 @@ always_comb begin
   end
 
   8'h44: begin                   //D
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'hFF00;
@@ -128,7 +115,7 @@ always_comb begin
   end
 
   8'h45: begin                   //E
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'hFFF0;
@@ -154,7 +141,7 @@ always_comb begin
   end
 
   8'h46: begin                   //F
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'hFFF0;
@@ -180,7 +167,7 @@ always_comb begin
   end
 
   8'h47: begin                   //G
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'h3FC0;
@@ -206,7 +193,7 @@ always_comb begin
   end
 
   8'h48: begin                   //H
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'hC030;
@@ -232,7 +219,7 @@ always_comb begin
   end
 
   8'h49: begin                   //I
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'h3FF0;
@@ -258,7 +245,7 @@ always_comb begin
   end
 
   8'h4a: begin                   //J
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'h0030;
@@ -284,7 +271,7 @@ always_comb begin
   end
 
   8'h4b: begin                   //K
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'hC0C0;
@@ -310,7 +297,7 @@ always_comb begin
   end
 
   8'h4c: begin                   //L
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'hC000;
@@ -336,7 +323,7 @@ always_comb begin
   end
 
   8'h4d: begin                   //M
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'hC030;
@@ -362,7 +349,7 @@ always_comb begin
   end
 
   8'h4e: begin                   //N
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'hC030;
@@ -388,7 +375,7 @@ always_comb begin
   end
 
   8'h4f: begin                   //O
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'h3FC0;
@@ -414,7 +401,7 @@ always_comb begin
   end
 
   8'h50: begin                   //P
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'hFFC0;
@@ -440,7 +427,7 @@ always_comb begin
   end
 
   8'h51: begin                   //Q
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'h3FC0;
@@ -466,7 +453,7 @@ always_comb begin
   end
 
   8'h52: begin                   //R
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'hFFC0;
@@ -492,7 +479,7 @@ always_comb begin
   end
 
   8'h53: begin                   //S
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'h3FC0;
@@ -518,7 +505,7 @@ always_comb begin
   end
 
   8'h54: begin                   //T
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'hFFFC;
@@ -544,7 +531,7 @@ always_comb begin
   end
 
   8'h55: begin                   //U
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'hC030;
@@ -570,7 +557,7 @@ always_comb begin
   end
 
   8'h56: begin                   //V
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'hC030;
@@ -596,7 +583,7 @@ always_comb begin
   end
 
   8'h57: begin                   //W
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'hC030;
@@ -622,7 +609,7 @@ always_comb begin
   end
 
   8'h58: begin                   //X
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'hC030;
@@ -648,7 +635,7 @@ always_comb begin
   end
 
   8'h59: begin                   //Y
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'hC00C;
@@ -674,7 +661,7 @@ always_comb begin
   end
 
   8'h5a: begin                   //Z
-  case(row)
+  case(line_number)
     0: pixel_row = 16'h0000;
     1: pixel_row = 16'h0000;
     2: pixel_row = 16'hFFF0;
@@ -701,7 +688,7 @@ always_comb begin
 
 
 8'hff: begin			//debug
-  case(row)
+  case(line_number)
   0: pixel_row = 16'hffff;
   1: pixel_row = 16'haaab;
   2: pixel_row = 16'hd555;
@@ -727,7 +714,7 @@ endcase
 end
 
 8'h30: begin                   //0
-case(row)
+case(line_number)
   0: pixel_row = 16'h0000;
   1: pixel_row = 16'h0000;
   2: pixel_row = 16'h3FC0;
@@ -753,7 +740,7 @@ endcase
 end
 
 8'h31: begin                   //1
-case(row)
+case(line_number)
   0: pixel_row = 16'h0000;
   1: pixel_row = 16'h0000;
   2: pixel_row = 16'h3C00;
@@ -779,7 +766,7 @@ endcase
 end
 
 8'h32: begin                   //2
-case(row)
+case(line_number)
   0: pixel_row = 16'h0000;
   1: pixel_row = 16'h0000;
   2: pixel_row = 16'h3FC0;
@@ -805,7 +792,7 @@ endcase
 end
 
 8'h33: begin                   //3
-case(row)
+case(line_number)
   0: pixel_row = 16'h0000;
   1: pixel_row = 16'h0000;
   2: pixel_row = 16'h3FC0;
@@ -831,7 +818,7 @@ endcase
 end
 
 8'h34: begin                   //4
-case(row)
+case(line_number)
   0: pixel_row = 16'h0000;
   1: pixel_row = 16'h0000;
   2: pixel_row = 16'h0300;
@@ -857,7 +844,7 @@ endcase
 end
 
 8'h35: begin                   //5
-case(row)
+case(line_number)
   0: pixel_row = 16'h0000;
   1: pixel_row = 16'h0000;
   2: pixel_row = 16'hFFF0;
@@ -883,7 +870,7 @@ endcase
 end
 
 8'h36: begin                   //6
-case(row)
+case(line_number)
   0: pixel_row = 16'h0000;
   1: pixel_row = 16'h0000;
   2: pixel_row = 16'h3FC0;
@@ -909,7 +896,7 @@ endcase
 end
 
 8'h37: begin                   //7
-case(row)
+case(line_number)
   0: pixel_row = 16'h0000;
   1: pixel_row = 16'h0000;
   2: pixel_row = 16'hFFF0;
@@ -935,7 +922,7 @@ endcase
 end
 
 8'h38: begin                   //8
-case(row)
+case(line_number)
   0: pixel_row = 16'h0000;
   1: pixel_row = 16'h0000;
   2: pixel_row = 16'h3FC0;
@@ -961,7 +948,7 @@ endcase
 end
 
 8'h39: begin                   //9
-case(row)
+case(line_number)
   0: pixel_row = 16'h0000;
   1: pixel_row = 16'h0000;
   2: pixel_row = 16'h3FC0;

@@ -24,7 +24,7 @@
 
 */
 module icache(
-    input CLK_cpu, read_en, fetch,
+    input CLK, read_en, fetch,
     input [19:0] read_addr, write_addr,
     input [31:0] write_data,
     output reg cache_miss,
@@ -40,7 +40,7 @@ module icache(
     wire [31:0] RDATA_setA, RDATA_setB, RDATA_setC, RDATA_setD;
     reg [31:0] MASK;
 
-always @ (posedge CLK_cpu) begin
+always @ (posedge CLK) begin
 
   case({read_en, fetch})
         2'b00: RADDR_TAG = 0;    //no op
@@ -209,10 +209,10 @@ always @ (posedge CLK_cpu) begin
 
 end
 
-RAM256x32 icache_setA(.RCLK_c(CLK_cpu),
+RAM256x32 icache_setA(.RCLK_c(CLK),
                       .RCLKE_c(read_en),
                       .RE_c(read_en),
-                      .WCLK_c(CLK_cpu),
+                      .WCLK_c(CLK),
                       .WCLKE_c(fetch),
                       .WE_c(fetch),
                       .RADDR_c(RADDR_CACHE),
@@ -222,10 +222,10 @@ RAM256x32 icache_setA(.RCLK_c(CLK_cpu),
                       .RDATA_OUT(RDATA_setA)
                       );
 
-RAM256x16 icache_tagA(.RCLK_c(CLK_cpu),
+RAM256x16 icache_tagA(.RCLK_c(CLK),
                       .RCLKE_c(read_en),
                       .RE_c(read_en),
-                      .WCLK_c(CLK_cpu),
+                      .WCLK_c(CLK),
                       .WCLKE_c(WE_tag),
                       .WE_c(WE_tag),
                       .RADDR_c(RADDR_TAG),
@@ -235,10 +235,10 @@ RAM256x16 icache_tagA(.RCLK_c(CLK_cpu),
                       .RDATA_OUT(tagA)
                       );
 
-RAM256x32 icache_setB(.RCLK_c(CLK_cpu),
+RAM256x32 icache_setB(.RCLK_c(CLK),
                       .RCLKE_c(read_en),
                       .RE_c(read_en),
-                      .WCLK_c(CLK_cpu),
+                      .WCLK_c(CLK),
                       .WCLKE_c(fetch),
                       .WE_c(fetch),
                       .RADDR_c(RADDR_CACHE),
@@ -248,10 +248,10 @@ RAM256x32 icache_setB(.RCLK_c(CLK_cpu),
                       .RDATA_OUT(RDATA_setB)
                       );
 
-RAM256x16 icache_tagB(.RCLK_c(CLK_cpu),
+RAM256x16 icache_tagB(.RCLK_c(CLK),
                       .RCLKE_c(read_en),
                       .RE_c(read_en),
-                      .WCLK_c(CLK_cpu),
+                      .WCLK_c(CLK),
                       .WCLKE_c(WE_tag),
                       .WE_c(WE_tag),
                       .RADDR_c(RADDR_TAG),
@@ -261,10 +261,10 @@ RAM256x16 icache_tagB(.RCLK_c(CLK_cpu),
                       .RDATA_OUT(tagB)
                       );
 
-RAM256x32 icache_setC(.RCLK_c(CLK_cpu),
+RAM256x32 icache_setC(.RCLK_c(CLK),
                       .RCLKE_c(read_en),
                       .RE_c(read_en),
-                      .WCLK_c(CLK_cpu),
+                      .WCLK_c(CLK),
                       .WCLKE_c(fetch),
                       .WE_c(fetch),
                       .RADDR_c(RADDR_CACHE),
@@ -274,10 +274,10 @@ RAM256x32 icache_setC(.RCLK_c(CLK_cpu),
                       .RDATA_OUT(RDATA_setC)
                       );
 
-RAM256x16 icache_tagC(.RCLK_c(CLK_cpu),
+RAM256x16 icache_tagC(.RCLK_c(CLK),
                       .RCLKE_c(read_en),
                       .RE_c(read_en),
-                      .WCLK_c(CLK_cpu),
+                      .WCLK_c(CLK),
                       .WCLKE_c(WE_tag),
                       .WE_c(WE_tag),
                       .RADDR_c(RADDR_TAG),
@@ -287,10 +287,10 @@ RAM256x16 icache_tagC(.RCLK_c(CLK_cpu),
                       .RDATA_OUT(tagC)
                       );
 
-RAM256x32 icache_setD(.RCLK_c(CLK_cpu),
+RAM256x32 icache_setD(.RCLK_c(CLK),
                       .RCLKE_c(read_en),
                       .RE_c(read_en),
-                      .WCLK_c(CLK_cpu),
+                      .WCLK_c(CLK),
                       .WCLKE_c(fetch),
                       .WE_c(fetch),
                       .RADDR_c(RADDR_CACHE),
@@ -300,10 +300,10 @@ RAM256x32 icache_setD(.RCLK_c(CLK_cpu),
                       .RDATA_OUT(RDATA_setD)
                       );
 
-RAM256x16 icache_tagD(.RCLK_c(CLK_cpu),
+RAM256x16 icache_tagD(.RCLK_c(CLK),
                       .RCLKE_c(read_en),
                       .RE_c(read_en),
-                      .WCLK_c(CLK_cpu),
+                      .WCLK_c(CLK),
                       .WCLKE_c(WE_tag),
                       .WE_c(WE_tag),
                       .RADDR_c(RADDR_TAG),
