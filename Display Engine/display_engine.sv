@@ -16,15 +16,20 @@ module display_engine(
 
   always_ff @ (posedge CLK_VGA) begin
 
-    read_addr = read_addr;
+    //if(!reset) begin
+      read_addr = read_addr;
 
-    if(!end_of_frame) begin
+      if(!end_of_frame) begin
 
-      if(newData) read_addr++;
+        if(newData) read_addr++;
 
-    end
-    else read_addr = 0;
+        if(end_of_line)
+          if(line_number < 19) read_addr = read_addr - 50;
 
+      end
+      else read_addr = 0;
+    //end
+    //else read_addr = 0;
   end
 
 vga vga(
@@ -41,16 +46,21 @@ vga vga(
         );
 
 ascii_to_pixel ascii_to_pixel(
-                              .end_of_line(end_of_line),
-                              .end_of_frame(end_of_frame),
                               .ascii(ascii),
                               .pixel_row(pixel_row),
                               .line_number(line_number)
                               );
 
+defparam video_memory.ram512X8_inst1.INIT_0 =
+256'h000000000000004b494e494d4f4400410041444e4f54;
+defparam video_memory.ram512X8_inst2.INIT_0 =
+256'h0000000000000000000000000000000000000000000000000000000000000042;
+defparam video_memory.ram512X8_inst3.INIT_0 =
+256'h0000000000000000000000000000000000000000000000000000000000000043;
+
 RAM1536x8 video_memory(
                         .RCLK(CLK_VGA),
-                        .RE(newData),
+                        .RE(1),
                         .WCLK(CLK_CPU),
                         .WE(video_write_enable),
                         .RADDR(read_addr),

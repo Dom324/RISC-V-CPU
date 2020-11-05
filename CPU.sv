@@ -45,6 +45,7 @@ display_engine display_engine(
                 );
 
 core core(
+          .reset(reset),
           .CLK(CLK_CPU),
           .stall_mem(cache_stall),
           .instr_fetch(instr_fetch),

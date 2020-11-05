@@ -1,5 +1,4 @@
 module ascii_to_pixel(
-  input logic end_of_line, end_of_frame,
   input logic [7:0] ascii,
   input logic [4:0] line_number,
   output logic [15:0] pixel_row

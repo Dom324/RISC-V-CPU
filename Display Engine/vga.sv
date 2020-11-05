@@ -24,10 +24,10 @@ localparam v_bp = 33;					//vertikalni back porch
 
 
 module vga(
-  input CLK_VGA, reset,						//pro 1280x720 CLK_VGA 74.25MHz, pro 640x480 CLK_VGA 25.175MHz
-  input [15:0] pixel_row,
-  output reg pixel, h_sync, v_sync, newData, end_of_line, end_of_frame,
-  output reg [4:0] line_number
+  input logic CLK_VGA, reset,						//pro 1280x720 CLK_VGA 74.25MHz, pro 640x480 CLK_VGA 25.175MHz
+  input logic [15:0] pixel_row,
+  output logic pixel, h_sync, v_sync, newData, end_of_line, end_of_frame,
+  output logic [4:0] line_number
   //output reg [10:0] horizontal_line,
   //output reg [9:0] vertical_line
 );
@@ -37,22 +37,27 @@ localparam horizontal = 800;			//sirka obrazu v pixelech
 localparam vertical = 600;				//vyska obrazu v pixelech
 localparam h_fp = 40;					//horizontalni front porch
 localparam h_sw = 128;					//horizontalni sync width
-localparam h_bp = 92;					//horizontalni back porch
+localparam h_bp = 88;					//horizontalni back porch
 localparam v_fp = 1;					//vertikalni front porch
 localparam v_sw = 4;					//vertikalni sync width
-localparam v_bp = 22;					//vertikalni back porch
+localparam v_bp = 23;					//vertikalni back porch
 
-  wire data_selected;
-  reg [3:0] counter;
-  reg [10:0] horizontal_line;
-  reg [9:0] vertical_line;
+  logic data_selected;
+  logic [3:0] counter;
+  logic [10:0] horizontal_line;
+  logic [9:0] vertical_line;
 
   mux16_single_input output_select(counter, pixel_row, data_selected);
 
-always @(posedge CLK_VGA) begin
+always_ff @ (posedge CLK_VGA) begin
 
   line_number = line_number;
 
+  /*if(reset) begin
+
+    line_number = 0;
+  end
+  else begin*/
   if(end_of_line) begin
     if(!end_of_frame) begin
       if(line_number == 5'b10011) line_number = 5'b00000;
@@ -60,68 +65,98 @@ always @(posedge CLK_VGA) begin
     end
     else line_number = 0;
   end
+  //end
 end
 
-always @ (posedge CLK_VGA) begin
 
-  if(!reset)begin
-  //counter <= 15;
-  vertical_line <= 0;
-  horizontal_line <= 0;
+always_comb begin
+
+  end_of_line = 0;
+  end_of_frame = 0;
+
+  if(horizontal_line == horizontal + h_fp + h_sw + h_bp - 1) begin		//jestli jsme na konci radku, end_of_line == 1
+
+    end_of_line = 1;
+
+    if(vertical_line == vertical + v_fp + v_sw + v_bp - 1) begin			//jestli jsme na konci sloupcu, pocitadlo radku = 0, jinak pocitadlo sloupcu++
+
+      end_of_frame = 1;
+
+    end
+
   end
+end
+
+
+always_comb begin
 
   //nastaveni v_sync signalu
-  if( (vertical_line < vertical + v_fp) || (vertical_line >= vertical + v_fp + v_sw) )
+  if( (vertical_line < vertical + v_fp - 1) || (vertical_line >= vertical + v_fp + v_sw - 1) )
     v_sync <= 1;
   else
     v_sync <= 0;
-  //aktualizace pocitadla radku
-  if(horizontal_line == horizontal + h_fp + h_sw + h_bp - 1) begin
-    if(vertical_line == vertical + v_fp + v_sw + v_bp - 1) begin			//jestli jsme na konci sloupcu, pocitadlo radku = 0, jinak pocitadlo sloupcu++
-      vertical_line <= 0;
-      end_of_frame = 1;
-    end
-    else begin
-      vertical_line <= vertical_line + 1;
-      end_of_frame = 0;
-    end
-  end
-
 
   //nastaveni h_sync signalu
-  if( (horizontal_line < horizontal + h_fp) || (horizontal_line >= horizontal + h_fp + h_sw) )
+  if( (horizontal_line < horizontal + h_fp - 1) || (horizontal_line >= horizontal + h_fp + h_sw - 1) )
     h_sync <= 1;
   else
     h_sync <= 0;
+
+end
+
+always_ff @ (posedge CLK_VGA) begin
+
   //aktualizace pocitadla sloupcu
   if(horizontal_line == horizontal + h_fp + h_sw + h_bp - 1)		//jestli jsme na konci radku, pocitadlo sloupcu = 0, jinak pocitadlo sloupcu++
     horizontal_line <= 0;
   else
     horizontal_line <= horizontal_line + 1;
 
-  if( (horizontal_line < horizontal) && (vertical_line < vertical) ) begin		//jestli mame tisknout obraz
+  //aktualizace pocitadla radku
+  if(horizontal_line == horizontal + h_fp + h_sw + h_bp - 1) begin
+    if(vertical_line == vertical + v_fp + v_sw + v_bp - 1) begin			//jestli jsme na konci sloupcu, pocitadlo radku = 0, jinak pocitadlo sloupcu++
+      vertical_line <= 0;
+    end
+    else vertical_line <= vertical_line + 1;
+  end
+
+end
+
+always_ff @ (posedge CLK_VGA) begin
+
+  /*if(reset)begin
+  //counter <= 15;
+  counter = 0;
+  end
+  else begin*/
+
+  if( (horizontal_line <= horizontal) && (vertical_line <= vertical) ) begin		//jestli mame tisknout obraz
 
     pixel = data_selected;
 
-	  if(counter == 15) begin
+    if(counter == 13) begin
       newData = 1;
+    end
+    else begin
+      newData = 0;
+    end
+
+	  if(counter == 15) begin
       counter <= 0;
     end
   	else begin
-      newData = 0;
       counter <= counter + 1;
     end
   end
   else begin
     newData = 0;
-	pixel = 0;
+	  pixel = 0;
   end
 
-  if(horizontal_line == horizontal + h_fp + h_sw + h_bp - 1)		//jestli jsme na konci radku, end_of_line == 1
-    end_of_line = 1;
-  else
-    end_of_line = 0;
+  if(horizontal_line == horizontal + h_fp + h_sw + h_bp - 1) begin		//jestli jsme na konci radku, end_of_line == 1
+    counter <= 0;
+  end
 
-
+  //end
 end
 endmodule

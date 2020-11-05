@@ -59,7 +59,8 @@ module TinyFPGA_BX (
 // deactivate USB
 assign USBPU = 1'b0;
 
-  wire reset, keyboard_data, keyboard_clock, hsync, vsync, VGA_pixel, CLK_VGA;
+  wire keyboard_data, keyboard_clock, hsync, vsync, VGA_pixel, CLK_VGA;
+  logic reset, power_up;
 
   assign reset = PIN_5;
   assign keyboard_data = PIN_12;
@@ -69,14 +70,37 @@ assign USBPU = 1'b0;
   assign PIN_14 = VGA_pixel;
   assign PIN_15 = CLK_VGA;
 
+  logic locked, CLK_CPU;
+  logic [1:0] CLK_DIV2;
+
+
+  /*assign PIN_16 = nextPC[7];
+  assign PIN_17 = nextPC[6];
+  assign PIN_18 = nextPC[5];
+  assign PIN_19 = nextPC[4];
+  assign PIN_20 = nextPC[3];
+  assign PIN_21 = nextPC[2];
+  assign PIN_22 = nextPC[1];
+  assign PIN_23 = nextPC[0];*/
+
+  always_ff @ (posedge CLK_16mhz) begin
+    CLK_DIV2++;
+  end
+  assign CLK_CPU = CLK_DIV2[1];
 
   //PLL obvod generujici CLK pro VGA obvod, 40MHz
-  pll CLK_VGA_PLL(
+  /*pll CLK_VGA_PLL(
                   .REFERENCECLK(CLK_16mhz),
                   .PLLOUTCORE(),
                   .PLLOUTGLOBAL(CLK_VGA),
                   .RESET(0)
-                  );
+                  );*/
+
+pll2 CLK_VGA_PLL(
+        .clock_in(CLK_16mhz),
+        .clock_out(CLK_VGA),
+        .locked(locked)
+        );
   //PLL obvod generujici CLK pro VGA obvod, 40MHz
 
 
@@ -84,7 +108,7 @@ assign USBPU = 1'b0;
                 .keyboard_data(keyboard_data),
                 .keyboard_clock(keyboard_clock),
                 .CLK_VGA(CLK_VGA),
-                .CLK_CPU(CLK_16mhz),
+                .CLK_CPU(CLK_CPU),
                 .hsync(hsync),
                 .vsync(vsync),
                 .VGA_pixel(VGA_pixel),
@@ -101,7 +125,7 @@ assign USBPU = 1'b0;
   wire [31:0] blink_pattern = 32'b101010001110111011100010101;
 
   // increment the blink_counter every clock
-  always @(posedge CLK_16mhz) begin
+  always @(posedge CLK_CPU) begin
       blink_counter <= blink_counter + 1;
   end
   // light up the LED according to the pattern
@@ -117,7 +141,7 @@ assign USBPU = 1'b0;
   assign PIN_2 = 1'bz;
   assign PIN_3 = 1'bz;
   assign PIN_4 = 1'bz;
-  assign PIN_5 = 1'bz;
+  //assign PIN_5 = 1'bz;
   assign PIN_6 = 1'bz;
   assign PIN_7 = 1'bz;
   assign PIN_8 = 1'bz;
@@ -128,7 +152,7 @@ assign USBPU = 1'b0;
   assign PIN_13 = 1'bz;
 
 // Right side of board
-  assign PIN_14 = 1'bz;
+  /*assign PIN_14 = 1'bz;
   assign PIN_15 = 1'bz;
   assign PIN_16 = 1'bz;
   assign PIN_17 = 1'bz;
@@ -137,7 +161,7 @@ assign USBPU = 1'b0;
   assign PIN_20 = 1'bz;
   assign PIN_21 = 1'bz;
   assign PIN_22 = 1'bz;
-  assign PIN_23 = 1'bz;
+  assign PIN_23 = 1'bz;*/
   assign PIN_24 = 1'bz;
 
 // SPI flash interface on bottom of board

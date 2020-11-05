@@ -1,5 +1,6 @@
 module core(
   input logic CLK,										//vstupni CLK
+  input logic reset,
   input logic stall_mem,								//zastavit zpracovani instrukci, signal z pameti
   input logic [31:0] instr_fetch, mem_read_data, 				//vstupni instrukce + prectena data z pameti
   output logic memory_en,								//vystupni signal memory_en -> pokud je 1, pamet se bude pouzivat
@@ -25,7 +26,9 @@ module core(
   mux4 #(32) pcSelect({pcControl, stall_pc}, PCplus4, aluRes, PC, PC, nextPC);
 
   always_ff @ (posedge CLK) begin
-    PC = nextPC;
+    if(!reset)
+      PC = nextPC;
+    else PC = 0;
   end
   //logika PC
 
@@ -79,11 +82,11 @@ module core(
 	end
 	else memData = 0;
 
-	if(funct7 == 7'b0100011) begin			//jedna se o STORE instrukci, do pameti se ukladaji data
+	if(op == 7'b0100011) begin			//jedna se o STORE instrukci, do pameti se ukladaji data
 
 	  case(funct3)
 
-	  	3'b000: mem_write_data = {{24{1'b0}}, rd2[7:0]};				//instrukce SB, do pameti se uklada jeden Byte
+	  3'b000: mem_write_data = {{24{1'b0}}, rd2[7:0]};				//instrukce SB, do pameti se uklada jeden Byte
 		3'b001: mem_write_data = {{16{1'b0}}, rd2[15:0]};				//instrukce SH, do pameti se ukladaji dva Byty
 		3'b010: mem_write_data = rd2;									//instrukce SW, do pameti se ukladaji ctyri Byty
 		default: mem_write_data = 0;

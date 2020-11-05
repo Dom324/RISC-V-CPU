@@ -14,7 +14,7 @@ always_comb begin
 
   case(instr[6:0])
 
-    7'b??10111: begin			//U-type instruction
+    7'b0110111: begin			//U-type instruction
 
 	  rd = instr[11:7];
       imm = {instr[31:12], 12'b000000000000};
