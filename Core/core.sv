@@ -26,9 +26,9 @@ module core(
   mux4 #(32) pcSelect({pcControl, stall_pc}, PCplus4, aluRes, PC, PC, nextPC);
 
   always_ff @ (posedge CLK) begin
-    if(!reset)
+    //if(!reset)
       PC = nextPC;
-    else PC = 0;
+    //else PC = 0;
   end
   //logika PC
 

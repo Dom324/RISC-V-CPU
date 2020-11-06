@@ -28,7 +28,7 @@ module vga(
   input logic [15:0] pixel_row,
   output logic pixel, h_sync, v_sync, newData, end_of_line, end_of_frame,
   output logic [4:0] line_number
-  //output reg [10:0] horizontal_line,
+  //output logic [10:0] horizontal_line
   //output reg [9:0] vertical_line
 );
 
@@ -37,7 +37,7 @@ localparam horizontal = 800;			//sirka obrazu v pixelech
 localparam vertical = 600;				//vyska obrazu v pixelech
 localparam h_fp = 40;					//horizontalni front porch
 localparam h_sw = 128;					//horizontalni sync width
-localparam h_bp = 88;					//horizontalni back porch
+localparam h_bp = 90;					//horizontalni back porch
 localparam v_fp = 1;					//vertikalni front porch
 localparam v_sw = 4;					//vertikalni sync width
 localparam v_bp = 23;					//vertikalni back porch

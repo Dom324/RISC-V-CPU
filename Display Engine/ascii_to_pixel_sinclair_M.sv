@@ -686,32 +686,6 @@ always_comb begin
   end
 
 
-8'hff: begin			//debug
-  case(line_number)
-  0: pixel_row = 16'hffff;
-  1: pixel_row = 16'haaab;
-  2: pixel_row = 16'hd555;
-  3: pixel_row = 16'haaab;
-  4: pixel_row = 16'hd555;
-  5: pixel_row = 16'haaab;
-  6: pixel_row = 16'hd555;
-  7: pixel_row = 16'haaab;
-  8: pixel_row = 16'hd555;
-  9: pixel_row = 16'haaab;
-  10: pixel_row = 16'hd555;
-  11: pixel_row = 16'haaab;
-  12: pixel_row = 16'hd555;
-  13: pixel_row = 16'haaab;
-  14: pixel_row = 16'hd555;
-  15: pixel_row = 16'haaab;
-  16: pixel_row = 16'hd555;
-  17: pixel_row = 16'haaab;
-  18: pixel_row = 16'hd555;
-  19: pixel_row = 16'hffff;
-default: pixel_row = 0;
-endcase
-end
-
 8'h30: begin                   //0
 case(line_number)
   0: pixel_row = 16'h0000;
@@ -968,6 +942,33 @@ case(line_number)
   17: pixel_row = 16'h0000;
   18: pixel_row = 16'h0000;
   19: pixel_row = 16'h0000;
+default: pixel_row = 0;
+endcase
+end
+
+
+8'hff: begin			//debug
+  case(line_number)
+  0: pixel_row = 16'hffff;
+  1: pixel_row = 16'haaab;
+  2: pixel_row = 16'hd555;
+  3: pixel_row = 16'haaab;
+  4: pixel_row = 16'hd555;
+  5: pixel_row = 16'haaab;
+  6: pixel_row = 16'hd555;
+  7: pixel_row = 16'haaab;
+  8: pixel_row = 16'hd555;
+  9: pixel_row = 16'haaab;
+  10: pixel_row = 16'hd555;
+  11: pixel_row = 16'haaab;
+  12: pixel_row = 16'hd555;
+  13: pixel_row = 16'haaab;
+  14: pixel_row = 16'hd555;
+  15: pixel_row = 16'haaab;
+  16: pixel_row = 16'hd555;
+  17: pixel_row = 16'haaab;
+  18: pixel_row = 16'hd555;
+  19: pixel_row = 16'hffff;
 default: pixel_row = 0;
 endcase
 end

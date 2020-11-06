@@ -71,7 +71,7 @@ assign USBPU = 1'b0;
   assign PIN_15 = CLK_VGA;
 
   logic locked, CLK_CPU;
-  logic [1:0] CLK_DIV2;
+  logic [12:0] CLK_DIV2;
 
 
   /*assign PIN_16 = nextPC[7];
@@ -86,7 +86,7 @@ assign USBPU = 1'b0;
   always_ff @ (posedge CLK_16mhz) begin
     CLK_DIV2++;
   end
-  assign CLK_CPU = CLK_DIV2[1];
+  assign CLK_CPU = CLK_DIV2[12];
 
   //PLL obvod generujici CLK pro VGA obvod, 40MHz
   /*pll CLK_VGA_PLL(

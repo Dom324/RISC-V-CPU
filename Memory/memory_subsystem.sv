@@ -27,7 +27,7 @@ module memory(
 
     //videopamet
     output reg video_write_enable,
-    output reg [7:0] video_write_data,
+    output reg [15:0] video_write_data,
     output reg [10:0] video_write_addr,
     //videopamet
 
