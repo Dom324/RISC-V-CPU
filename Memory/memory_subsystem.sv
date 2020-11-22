@@ -16,37 +16,38 @@ Mapa pametovych adres:
 Do videopameti zatim lze zapisovat jen po 8 bitech
 */
 module memory(
-    input CLK_CPU, mem_en,
-    input [1:0] store_size,
-    input [31:0] nextPC, mem_addr, write_data,
+    input logic CLK_CPU, mem_en,
+    input logic [1:0] store_size,
+    input logic [31:0] nextPC, mem_addr, write_data,
 
     //klavesnice
-    input wire [7:0] pressed_key,
-    output reg clean_key_buffer,
+    input logic [7:0] pressed_key,
+    output logic clean_key_buffer,
     //klavesnice
 
     //videopamet
-    output reg video_write_enable,
-    output reg [15:0] video_write_data,
-    output reg [10:0] video_write_addr,
+    output logic video_write_enable,
+    output logic [7:0] video_write_data,
+    output logic [10:0] video_write_addr,
     //videopamet
 
-    output reg stall,
+    output logic stall,
     output logic [31:0] instr_fetch, read_data
 );
 
-  wire dcache_miss;
-  reg dcache_read_en, dcache_write_en, dcache_fetch;
-  reg [31:0] dcache_write_data, dcache_write_addr, dcache_read_data;
+  logic dcache_miss;
+  logic dcache_read_en, dcache_write_en, dcache_fetch;
+  logic [31:0] dcache_write_data, dcache_read_data;
+  logic [19:0] dcache_read_addr, dcache_write_addr;
 
-  wire icache_miss;
-  reg icache_fetch;
-  reg [31:0] icache_write_data, icache_write_addr;
+  logic icache_miss;
+  logic icache_fetch;
+  logic [31:0] icache_write_data, icache_write_addr;
 
-  reg busy;         //indikuje, zda je pamet uprostred zapisu, cteni, fetche
+  logic busy;         //indikuje, zda je pamet uprostred zapisu, cteni, fetche
 
 
-always @ (posedge CLK_CPU) begin
+always_comb begin
 
   stall = 0;
   read_data = 0;
@@ -54,6 +55,7 @@ always @ (posedge CLK_CPU) begin
   dcache_read_en = 0;
   dcache_write_en = 0;
   dcache_fetch = 0;
+  dcache_read_addr = 0;
   dcache_write_addr = 0;
   dcache_write_data = 0;
 
@@ -77,12 +79,14 @@ always @ (posedge CLK_CPU) begin
           dcache_write_en = 0;
           dcache_fetch = 0;
           dcache_write_data = 0;
+          dcache_read_addr = mem_addr[19:0];
       end                             //zapisuje se do pameti
         2'b10, 2'b01, 2'b00: begin
           dcache_read_en = 0;
           dcache_write_en = 1;
           dcache_fetch = 0;
           dcache_write_data = write_data;
+          dcache_write_addr = mem_addr[19:0];
         end
       endcase
     end
@@ -110,8 +114,8 @@ dcache L1D(
           .fetch(dcache_fetch),
           .cache_miss(dcache_miss),
           .store_size(store_size),
-          .read_addr(mem_addr[19:0]),
-          .write_addr(mem_addr[19:0]),
+          .read_addr(dcache_read_addr),
+          .write_addr(dcache_write_addr),
           .write_data(dcache_write_data),
           .RDATA_out(dcache_read_data),
           .TAG_OUT()                     //doplnit
@@ -123,9 +127,8 @@ dcache L1D(
             .fetch(icache_fetch),
             .cache_miss(icache_miss),
             .read_addr(nextPC[19:0]),
-            .write_addr(0),
             .write_data(icache_write_data),
-            .RDATA_out(instr_fetch)
+            .RDATA_OUT(instr_fetch)
     );
 
 endmodule

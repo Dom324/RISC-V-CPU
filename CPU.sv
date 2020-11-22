@@ -21,7 +21,7 @@ display_engine display_engine(
                               .reset(reset),
                               .video_write_enable(video_write_enable),
                               .video_write_data(video_write_data),
-                              .video_write_addr(0),
+                              .video_write_addr(video_write_addr),
                               .VGA_pixel(VGA_pixel),
                               .hsync(hsync),
                               .vsync(vsync)
