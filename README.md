@@ -7,11 +7,11 @@ Struktura:
                                     |                      |----> scancode_to_ascii.sv
                                     |				
                                     |	    
-                                    |	                         |----> vga.sv
-                                    |	                         |
+                                    |                            |----> vga.sv
+                                    |                            |
                                     |----> display_engine.sv ----|----> ascii_to_pixel.sv
-                                    |	                         |
-                                    |	                         |----> RAM1536x8.sv
+                                    |                            |
+                                    |                            |----> RAM1536x8.sv
     TinyFPGA_BX.sv ----> CPU.sv ----|
                                     |
                                     |
