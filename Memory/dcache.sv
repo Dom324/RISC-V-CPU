@@ -56,7 +56,7 @@ module dcache(
     wire [31:0] RDATA_setA, RDATA_setB, RDATA_setC, RDATA_setD;
 
     logic [19:0] read_addr_old, write_addr_old;
-    logic [1:0] state;
+    logic [2:0] state;
 
 //initial state = 0;
 
@@ -64,7 +64,7 @@ module dcache(
 always_ff @ (posedge CLK) begin
     case(state)
 
-          2'b00: begin                    //stav == 0, cache je neaktivni
+          2'b000: begin                    //stav == 0, cache je neaktivni
             if(read_en) begin
               state <= 1;
               read_addr_old <= read_addr;
@@ -76,7 +76,7 @@ always_ff @ (posedge CLK) begin
             else state <= 0;
           end
 
-          2'b01: begin                    //stav == 1, z pameti cache se cte
+          2'b001: begin                    //stav == 1, z pameti cache se cte
             if(!cache_miss) begin
 
               if(read_en) begin
@@ -90,52 +90,121 @@ always_ff @ (posedge CLK) begin
               else state <= 0;
 
             end
-            else state <= 2;
+            else state <= 3;
 
           end
 
-          2'b10: begin                    //stav == 2, do cache se fetchuje
+          2'b010: begin              //stav == 2, do cache se zapisuje
+            if(!cache_miss) begin
+
+              if(read_en) begin
+                state <= 1;
+                read_addr_old <= read_addr;
+              end
+              else if(write_en) begin
+                state <= 3;
+                write_addr_old <= write_addr;
+              end
+              else state <= 0;
+
+            end
+            else state <= 4;
+
+          end
+
+          2'b011: begin                    //stav == 3, do cache se fetchuje, cache cte data
             if(fetch) state <= 0;
-            else state <= 2;
+            else state <= 3;
           end
 
-          2'b11: begin              //stav == 3, do cache se zapisuje
-            if(!cache_miss) begin
+          2'b100: begin                    //stav == 4, do cache se fetchuje, cache zapisuje data
+            if(fetch) state <= 0;
+            else state <= 4;
+          end
 
-              if(read_en) begin
-                state <= 1;
-                read_addr_old <= read_addr;
-              end
-              else if(write_en) begin
-                state <= 3;
-                write_addr_old <= write_addr;
-              end
-              else state <= 0;
+          default: begin
 
-            end
-            else state <= 2;
+            state <= 0;
 
           end
+
+
     endcase
 end
 
 always_comb begin
 
-  case({read_en, write_en, fetch})
-        3'b000: RADDR_TAG = 0;                  //no op
-        3'b001: RADDR_TAG = write_addr[9:2];    //fetch
-        3'b010: RADDR_TAG = write_addr[9:2];    //write
-        3'b100: RADDR_TAG = read_addr[9:2];     //read
-        default: RADDR_TAG = 0;                 //ilegal
+  case(state)
+    3'b000: RADDR_TAG = 0;                  //dont care
+    3'b001: RADDR_TAG = read_addr[9:2];     //fetch
+    3'b010: RADDR_TAG = write_addr[9:2];    //write
+    3'b011: RADDR_TAG = read_addr[9:2];    //write
+    3'b100: RADDR_TAG = write_addr[9:2];     //read
+    default: RADDR_TAG = 0;                 //dont care
   endcase
 
-  case({read_en, write_en, fetch})
-        3'b000: RADDR_CACHE = 0;                  //no op
-        3'b001: RADDR_CACHE = write_addr[9:2];    //fetch
-        3'b010: RADDR_CACHE = 0;                  //write
-        3'b100: RADDR_CACHE = read_addr[9:2];     //read
-        default: RADDR_CACHE = 0;                 //ilegal
+  case(state)
+    3'b000: RADDR_CACHE = 0;                  //dont care
+    3'b001: RADDR_CACHE = read_addr[9:2];     //fetch
+    3'b010: RADDR_CACHE = write_addr[9:2];    //write
+    3'b100: RADDR_CACHE = read_addr[9:2];     //read
+    default: RADDR_CACHE = 0;                 //dont care
   endcase
+
+
+  case(state)
+    2'b00: begin
+      cache_miss = 0;
+      RDATA_OUT = 0;
+      TAG_OUT = 0;      //dont care
+    end
+
+    2'b01: begin
+
+      //cteme data
+      if( (tagA[9:0] == read_addr[19:10]) & (tagA[13] == 1) ) begin
+        RDATA_OUT = RDATA_setA;
+        set_used = 2'b00;
+        cache_miss = 0;
+        TAG_OUT = 0;      //dont care
+      end
+
+      else if( (tagB[9:0] == read_addr[19:10]) & (tagB[13] == 1) ) begin
+          RDATA_OUT = RDATA_setB;
+          set_used = 2'b01;
+          cache_miss = 0;
+          TAG_OUT = 0;      //dont care
+      end
+
+      else if( (tagC[9:0] == read_addr[19:10]) & (tagC[13] == 1) ) begin
+          RDATA_OUT = RDATA_setC;
+          set_used = 2'b10;
+          cache_miss = 0;
+          TAG_OUT = 0;      //dont care
+      end
+
+      else if( (tagD[9:0] == read_addr[19:10]) & (tagD[13] == 1) ) begin
+          RDATA_OUT = RDATA_setD;
+          set_used = 2'b11;
+          cache_miss = 0;
+          TAG_OUT = 0;      //dont care
+      end
+
+      else begin
+        cache_miss = 1;
+        RDATA_OUT = 0;
+        set_used = 2'b00;           //dont care
+        TAG_OUT = 0;      //dont care
+      end
+      //konec cteni dat
+
+    end
+
+
+
+end
+
+always_comb begin
 
     LRU_A = tagA[11:10];
     LRU_B = tagB[11:10];
@@ -165,37 +234,7 @@ always_comb begin
 //cteme data
   if((read_en == 1) & (write_en == 0) & (fetch == 0)) begin
 
-    if(tagA[9:0] == read_addr[19:10]) begin
-      if(tagA[13] == 1) begin
-        RDATA_out = RDATA_setA;
-        set_used = 2'b00;
-      end
-    end
 
-    else if(tagB[9:0] == read_addr[19:10]) begin
-      if(tagB[13] == 1) begin
-        RDATA_out = RDATA_setB;
-        set_used = 2'b01;
-      end
-    end
-
-    else if(tagC[9:0] == read_addr[19:10]) begin
-      if(tagC[13] == 1) begin
-        RDATA_out = RDATA_setC;
-        set_used = 2'b10;
-      end
-    end
-
-    else if(tagD[9:0] == read_addr[19:10]) begin
-      if(tagD[13] == 1) begin
-        RDATA_out = RDATA_setD;
-        set_used = 2'b11;
-      end
-    end
-    else begin
-      cache_miss = 1;
-      RDATA_out = 0;
-    end
   end
 //konec cteni dat
 
