@@ -138,14 +138,22 @@ case(state)
       cache_miss = 0;
       RDATA_OUT = write_data;
 
-      if((LRU_A <= LRU_B) & (LRU_A <= LRU_C) & (LRU_A <= LRU_D))    //LRU_A je nejmensi
-          set_used = 2'b00;
-      else if((LRU_B <= LRU_C) & (LRU_B <= LRU_D))                  //LRU_B je nejmensi
-          set_used = 2'b01;
-      else if(LRU_C <= LRU_D)                                       //LRU_C je nejmensi
-          set_used = 2'b10;
-      else set_used = 2'b11;                                        //LRU_D je nejmensi
+      if(tagA[13] == 0) set_used = 2'b00;
+      else if(tagB[13] == 0) set_used = 2'b01;
+      else if(tagC[13] == 0) set_used = 2'b10;
+      else if(tagD[13] == 0) set_used = 2'b11;
 
+      else begin
+
+        if((LRU_A <= LRU_B) & (LRU_A <= LRU_C) & (LRU_A <= LRU_D))    //LRU_A je nejmensi
+          set_used = 2'b00;
+        else if((LRU_B <= LRU_C) & (LRU_B <= LRU_D))                  //LRU_B je nejmensi
+          set_used = 2'b01;
+        else if(LRU_C <= LRU_D)                                       //LRU_C je nejmensi
+          set_used = 2'b10;
+        else set_used = 2'b11;                                        //LRU_D je nejmensi
+
+        end
     end
     else begin
       cache_miss = 1;
