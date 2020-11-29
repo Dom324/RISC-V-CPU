@@ -91,7 +91,7 @@ always_comb begin
 case(state)
   2'b00: begin
     cache_miss = 0;
-    RDATA_OUT = 0;
+    RDATA_OUT = 0;              //dont care
     set_used = 2'b00;           //dont care
 
   end
@@ -125,7 +125,7 @@ case(state)
 
     else begin
       cache_miss = 1;
-      RDATA_OUT = 0;
+      RDATA_OUT = 0;           //dont care
       set_used = 2'b00;           //dont care
     end
     //konec cteni dat
@@ -133,11 +133,10 @@ case(state)
 
   2'b10: begin
 
-    RDATA_OUT = 0;
-
     if(fetch) begin
 
       cache_miss = 0;
+      RDATA_OUT = write_data;
 
       if((LRU_A <= LRU_B) & (LRU_A <= LRU_C) & (LRU_A <= LRU_D))    //LRU_A je nejmensi
           set_used = 2'b00;
@@ -150,6 +149,7 @@ case(state)
     end
     else begin
       cache_miss = 1;
+      RDATA_OUT = 0;           //dont care
       set_used = 2'b00;         //dont care
     end
 
