@@ -37,11 +37,11 @@
 
 */
 module dcache(
-    input CLK, read_en, write_en, fetch,
+    input CLK, read_en, write_en, fetch, writeback,
     input [19:0] read_addr, write_addr,
     input [31:0] write_data,
     input [1:0] store_size,
-  	output reg [15:0] TAG_OUT,
+  	output reg [19:0] FLASH_ADDR,
     output reg cache_miss,
     output reg [31:0] RDATA_out
 );
@@ -136,69 +136,228 @@ always_comb begin
 
   case(state)
     3'b000: RADDR_TAG = 0;                  //dont care
-    3'b001: RADDR_TAG = read_addr[9:2];     //fetch
+    3'b001: RADDR_TAG = read_addr[9:2];     //read
     3'b010: RADDR_TAG = write_addr[9:2];    //write
-    3'b011: RADDR_TAG = read_addr[9:2];    //write
-    3'b100: RADDR_TAG = write_addr[9:2];     //read
+    3'b011: RADDR_TAG = read_addr[9:2];     //fetch read
+    3'b100: RADDR_TAG = write_addr[9:2];    //fetch write
     default: RADDR_TAG = 0;                 //dont care
   endcase
 
   case(state)
     3'b000: RADDR_CACHE = 0;                  //dont care
-    3'b001: RADDR_CACHE = read_addr[9:2];     //fetch
+    3'b001: RADDR_CACHE = read_addr[9:2];     //read
     3'b010: RADDR_CACHE = write_addr[9:2];    //write
-    3'b100: RADDR_CACHE = read_addr[9:2];     //read
+    3'b011: RADDR_CACHE = read_addr[9:2];     //fetch read
+    3'b100: RADDR_CACHE = write_addr[9:2];     //fetch write
     default: RADDR_CACHE = 0;                 //dont care
   endcase
 
 
   case(state)
-    2'b00: begin
+    3'b000: begin
+      writeback = 0;
       cache_miss = 0;
-      RDATA_OUT = 0;
-      TAG_OUT = 0;      //dont care
+      RDATA_OUT = 0;      //dont care
+      FLASH_ADDR = 0;        //dont care
+      set_used = 0;       //dont care
     end
 
-    2'b01: begin
+    3'b001: begin
+
 
       //cteme data
       if( (tagA[9:0] == read_addr[19:10]) & (tagA[13] == 1) ) begin
         RDATA_OUT = RDATA_setA;
         set_used = 2'b00;
         cache_miss = 0;
-        TAG_OUT = 0;      //dont care
+        writeback = 0;
+        FLASH_ADDR = 0;      //dont care
       end
 
       else if( (tagB[9:0] == read_addr[19:10]) & (tagB[13] == 1) ) begin
           RDATA_OUT = RDATA_setB;
           set_used = 2'b01;
           cache_miss = 0;
-          TAG_OUT = 0;      //dont care
+          writeback = 0;
+          FLASH_ADDR = 0;      //dont care
       end
 
       else if( (tagC[9:0] == read_addr[19:10]) & (tagC[13] == 1) ) begin
           RDATA_OUT = RDATA_setC;
           set_used = 2'b10;
           cache_miss = 0;
-          TAG_OUT = 0;      //dont care
+          writeback = 0;
+          FLASH_ADDR = 0;      //dont care
       end
 
       else if( (tagD[9:0] == read_addr[19:10]) & (tagD[13] == 1) ) begin
           RDATA_OUT = RDATA_setD;
           set_used = 2'b11;
           cache_miss = 0;
-          TAG_OUT = 0;      //dont care
+          writeback = 0;
+          FLASH_ADDR = 0;      //dont care
       end
 
       else begin
         cache_miss = 1;
-        RDATA_OUT = 0;
+        RDATA_OUT = 0;              //dont care
         set_used = 2'b00;           //dont care
-        TAG_OUT = 0;      //dont care
+        FLASH_ADDR = 0;                //dont care
       end
       //konec cteni dat
 
     end
+
+
+    3'b010: begin             //zapis dat
+
+
+      //zapisujeme data
+      if( ((tagA[9:0] == write_addr[19:10]) & (tagA[13] == 1)) || (tagA[13] == 0) ) begin
+        RDATA_OUT = 0;      //dont care
+        set_used = 2'b00;
+        cache_miss = 0;
+        writeback = 0;
+        FLASH_ADDR = 0;      //dont care
+      end
+
+      else if( (tagB[9:0] == write_addr[19:10]) & (tagB[13] == 1) || (tagB[13] == 0) ) begin
+          RDATA_OUT = 0;      //dont care
+          set_used = 2'b01;
+          cache_miss = 0;
+          writeback = 0;
+          FLASH_ADDR = 0;      //dont care
+      end
+
+      else if( (tagC[9:0] == write_addr[19:10]) & (tagC[13] == 1) || (tagC[13] == 0) ) begin
+          RDATA_OUT = 0;      //dont care
+          set_used = 2'b10;
+          cache_miss = 0;
+          writeback = 0;
+          FLASH_ADDR = 0;      //dont care
+      end
+
+      else if( (tagD[9:0] == write_addr[19:10]) & (tagD[13] == 1) || (tagD[13] == 0) ) begin
+          RDATA_OUT = 0;      //dont care
+          set_used = 2'b11;
+          cache_miss = 0;
+          writeback = 0;
+          FLASH_ADDR = 0;      //dont care
+      end
+
+      else begin
+
+        if(store_size == 2'b10) begin       //pokud zapisujeme 32 bitu, prepisuje se cely cache block -> neni potreba fetch
+
+          cache_miss = 0;
+
+          if(tagA[13] == 0) begin
+            set_used = 2'b00;
+            writeback = 1;
+            RDATA_OUT = RDATA_setA;
+            FLASH_ADDR = {tagA[9:0], RADDR_TAG};
+          end
+          else if(tagB[13] == 0) begin
+            set_used = 2'b01;
+            writeback = 1;
+            RDATA_OUT = RDATA_setB;
+            FLASH_ADDR = {tagB[9:0], RADDR_TAG};
+          end
+          else if(tagC[13] == 0) begin
+            set_used = 2'b10;
+            writeback = 1;
+            RDATA_OUT = RDATA_setC;
+            FLASH_ADDR = {tagC[9:0], RADDR_TAG};
+          end
+          else (tagD[13] == 0) begin
+            set_used = 2'b11;
+            writeback = 1;
+            RDATA_OUT = RDATA_setD;
+            FLASH_ADDR = {tagD[9:0], RADDR_TAG};
+          end
+        end
+        else begin
+
+          cache_miss = 1;
+
+          if((LRU_A <= LRU_B) & (LRU_A <= LRU_C) & (LRU_A <= LRU_D)) begin    //LRU_A je nejmensi
+            set_used = 2'b00;
+            RDATA_OUT = RDATA_setA;
+            FLASH_ADDR = {tagA[9:0], RADDR_TAG};
+          end
+          else if((LRU_B <= LRU_C) & (LRU_B <= LRU_D)) begin                  //LRU_B je nejmensi
+            set_used = 2'b01;
+            RDATA_OUT = RDATA_setB;
+            FLASH_ADDR = {tagB[9:0], RADDR_TAG};
+          end
+          else if(LRU_C <= LRU_D) begin                                       //LRU_C je nejmensi
+            set_used = 2'b10;
+            RDATA_OUT = RDATA_setC;
+            FLASH_ADDR = {tagC[9:0], RADDR_TAG};
+          end
+          else begin                                                          //LRU_D je nejmensi
+            set_used = 2'b11;
+            RDATA_OUT = RDATA_setD;
+            FLASH_ADDR = {tagD[9:0], RADDR_TAG};
+          end
+
+
+
+
+
+        end
+      end
+
+
+
+
+
+
+      //konec cteni dat
+    end
+
+
+  3'b011: begin             //fetch read
+
+    writeback = 0;
+
+    //zapis dat
+    if(fetch) begin
+
+      cache_miss = 0;
+      RDATA_OUT = write_data;
+
+      if(tagA[13] == 0) set_used = 2'b00;
+      else if(tagB[13] == 0) set_used = 2'b01;
+      else if(tagC[13] == 0) set_used = 2'b10;
+      else if(tagD[13] == 0) set_used = 2'b11;
+
+      else begin
+
+        if((LRU_A <= LRU_B) & (LRU_A <= LRU_C) & (LRU_A <= LRU_D))    //LRU_A je nejmensi
+          set_used = 2'b00;
+        else if((LRU_B <= LRU_C) & (LRU_B <= LRU_D))                  //LRU_B je nejmensi
+          set_used = 2'b01;
+        else if(LRU_C <= LRU_D)                                       //LRU_C je nejmensi
+          set_used = 2'b10;
+        else set_used = 2'b11;                                        //LRU_D je nejmensi
+
+        end
+    end
+    else begin
+      cache_miss = 1;
+      RDATA_OUT = 0;           //dont care
+      set_used = 2'b00;         //dont care
+    end
+
+  end
+
+
+
+
+
+
+  endcase
 
 
 
@@ -224,7 +383,7 @@ always_comb begin
 
     WE_tag = 0;
   //defaultne nastavit write enable porty na 0
-    TAG_OUT = 0;
+    FLASH_ADDR = 0;
     cache_miss = 0;
     RDATA_out = 0;
     MASK = 32'h00000000;
@@ -315,19 +474,19 @@ always_comb begin
     case(set_used)        //blok ktery je evicted z cache se posle na zapsani do pameti
       2'b00: begin
         RDATA_out = RDATA_setA;
-        TAG_OUT = tagA;
+        FLASH_ADDR = tagA;
       end
       2'b01: begin
         RDATA_out = RDATA_setB;
-        TAG_OUT = tagB;
+        FLASH_ADDR = tagB;
       end
       2'b10: begin
         RDATA_out = RDATA_setC;
-        TAG_OUT = tagC;
+        FLASH_ADDR = tagC;
       end
       2'b11: begin
         RDATA_out = RDATA_setD;
-        TAG_OUT = tagD;
+        FLASH_ADDR = tagD;
       end
     endcase
   end
