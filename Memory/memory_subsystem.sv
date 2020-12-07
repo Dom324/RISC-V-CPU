@@ -1,6 +1,7 @@
 /*
 Mapa pametovych adres:
-    uzivatelska pamet - adresy 0x00000000 az 0x000FFFFF (1MB)
+    programova pamet - adresy 0x00000000 az 0x000AEFFF (~0.7MB)
+    pamet pro promene - adresy 0x000AF000 az 0x000AFFFF
     videopamet - adresy 0xF0000000 az 0xF00005DC (1500B)
     Look Up Table (LUT) pro znaky definovane programem - zatim neexistuje
     zmacknuta klavesa - adresa 0xFFFFFFFF (1B)
