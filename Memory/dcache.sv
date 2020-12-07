@@ -199,10 +199,35 @@ always_comb begin
       end
 
       else begin
+
         cache_miss = 1;
-        RDATA_OUT = 0;              //dont care
-        set_used = 2'b00;           //dont care
-        FLASH_ADDR = 0;                //dont care
+
+        if(tagA[13] == 0) begin
+          writeback = 0;
+          set_used = 2'b00;
+          RDATA_OUT = 0;              //dont care
+          FLASH_ADDR = 0;                //dont care
+        end
+        if(tagB[13] == 0) begin
+          writeback = 0;
+          set_used = 2'b01;
+          RDATA_OUT = 0;              //dont care
+          FLASH_ADDR = 0;                //dont care
+        end
+        if(tagC[13] == 0) begin
+          writeback = 0;
+          set_used = 2'b10;
+          RDATA_OUT = 0;              //dont care
+          FLASH_ADDR = 0;                //dont care
+        end
+        if(tagD[13] == 0) begin
+          writeback = 0;
+          set_used = 2'b11;
+          RDATA_OUT = 0;              //dont care
+          FLASH_ADDR = 0;                //dont care
+        end
+
+
       end
       //konec cteni dat
 
@@ -275,6 +300,7 @@ always_comb begin
             RDATA_OUT = RDATA_setD;
             FLASH_ADDR = {tagD[9:0], RADDR_TAG};
           end
+
         end
         else begin
 
@@ -300,57 +326,46 @@ always_comb begin
             RDATA_OUT = RDATA_setD;
             FLASH_ADDR = {tagD[9:0], RADDR_TAG};
           end
-
-
-
-
-
         end
       end
-
-
-
-
-
-
       //konec cteni dat
     end
 
 
-  3'b011: begin             //fetch read
+    3'b011: begin             //fetch read
 
-    writeback = 0;
+      writeback = 0;
 
-    //zapis dat
-    if(fetch) begin
+      //zapis dat
+      if(fetch) begin
 
-      cache_miss = 0;
-      RDATA_OUT = write_data;
+        cache_miss = 0;
+        RDATA_OUT = write_data;
 
-      if(tagA[13] == 0) set_used = 2'b00;
-      else if(tagB[13] == 0) set_used = 2'b01;
-      else if(tagC[13] == 0) set_used = 2'b10;
-      else if(tagD[13] == 0) set_used = 2'b11;
+        if(tagA[13] == 0) set_used = 2'b00;
+        else if(tagB[13] == 0) set_used = 2'b01;
+        else if(tagC[13] == 0) set_used = 2'b10;
+        else if(tagD[13] == 0) set_used = 2'b11;
 
-      else begin
+        else begin
 
-        if((LRU_A <= LRU_B) & (LRU_A <= LRU_C) & (LRU_A <= LRU_D))    //LRU_A je nejmensi
-          set_used = 2'b00;
-        else if((LRU_B <= LRU_C) & (LRU_B <= LRU_D))                  //LRU_B je nejmensi
-          set_used = 2'b01;
-        else if(LRU_C <= LRU_D)                                       //LRU_C je nejmensi
-          set_used = 2'b10;
-        else set_used = 2'b11;                                        //LRU_D je nejmensi
+          if((LRU_A <= LRU_B) & (LRU_A <= LRU_C) & (LRU_A <= LRU_D))    //LRU_A je nejmensi
+            set_used = 2'b00;
+          else if((LRU_B <= LRU_C) & (LRU_B <= LRU_D))                  //LRU_B je nejmensi
+            set_used = 2'b01;
+          else if(LRU_C <= LRU_D)                                       //LRU_C je nejmensi
+            set_used = 2'b10;
+          else set_used = 2'b11;                                        //LRU_D je nejmensi
 
         end
-    end
-    else begin
-      cache_miss = 1;
-      RDATA_OUT = 0;           //dont care
-      set_used = 2'b00;         //dont care
-    end
+      end
+      else begin
+        cache_miss = 1;
+        RDATA_OUT = 0;           //dont care
+        set_used = 2'b00;         //dont care
+      end
 
-  end
+    end
 
 
 
