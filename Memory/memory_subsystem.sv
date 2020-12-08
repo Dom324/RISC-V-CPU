@@ -118,8 +118,7 @@ dcache L1D(
           .read_addr(dcache_read_addr),
           .write_addr(dcache_write_addr),
           .write_data(dcache_write_data),
-          .RDATA_out(dcache_read_data),
-          .TAG_OUT()                     //doplnit
+          .RDATA_OUT(dcache_read_data)
   );
 
   icache L1I(
