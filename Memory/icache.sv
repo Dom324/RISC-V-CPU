@@ -36,12 +36,12 @@ module icache(
     logic [15:0] tagA_NEW, tagB_NEW, tagC_NEW, tagD_NEW;
     logic [1:0] LRU_A, LRU_B, LRU_C, LRU_D;
     logic [1:0] set_used;           //ktery set byl pouzit, 00 = A, 01 = B, 10 = C, 11 = D
+
     logic WE_tag, WE_setA, WE_setB, WE_setC, WE_setD;
     logic [15:0] tagA, tagB, tagC, tagD;
     logic [31:0] RDATA_setA, RDATA_setB, RDATA_setC, RDATA_setD;
     logic [31:0] MASK;
 
-    logic [19:0] read_addr_old;
     logic [1:0] state;
 
 //initial state = 0;
@@ -51,9 +51,9 @@ always_ff @ (posedge CLK) begin
     case(state)
 
           2'b00: begin                    //stav == 0, cache je neaktivni
+
             if(read_en) begin
               state <= 1;
-              read_addr_old <= read_addr;
             end
             else state <= 0;
           end
@@ -63,13 +63,13 @@ always_ff @ (posedge CLK) begin
 
               if(read_en) begin
                 state <= 1;
-                read_addr_old <= read_addr;
               end
               else state <= 0;
 
             end
-            else state <= 2;
-
+            else begin
+              state <= 2;
+            end
           end
 
           2'b10: begin                    //stav == 2, do cache se zapisuje
@@ -145,15 +145,16 @@ case(state)
 
       else begin
 
-        if((LRU_A <= LRU_B) & (LRU_A <= LRU_C) & (LRU_A <= LRU_D))    //LRU_A je nejmensi
+        if((LRU_A <= LRU_B) & (LRU_A <= LRU_C) & (LRU_A <= LRU_D))
           set_used = 2'b00;
-        else if((LRU_B <= LRU_C) & (LRU_B <= LRU_D))                  //LRU_B je nejmensi
+        else if((LRU_B <= LRU_C) & (LRU_B <= LRU_D))
           set_used = 2'b01;
-        else if(LRU_C <= LRU_D)                                       //LRU_C je nejmensi
+        else if(LRU_C <= LRU_D)
           set_used = 2'b10;
-        else set_used = 2'b11;                                        //LRU_D je nejmensi
+        else
+          set_used = 2'b11;
 
-        end
+      end
     end
     else begin
       cache_miss = 1;
@@ -217,58 +218,69 @@ always_comb begin
     MASK = 32'h00000000;
     WE_tag = 1;
 
-    if(set_used == 2'b00) begin
-      WE_setA = 1;
+    case(set_used)
+      2'b00: begin
+        WE_setA = 1;
+        WE_setB = 0;
+        WE_setC = 0;
+        WE_setD = 0;
+      end
+      2'b01: begin
+        WE_setA = 0;
+        WE_setB = 1;
+        WE_setC = 0;
+        WE_setD = 0;
+      end
+      2'b10: begin
+        WE_setA = 0;
+        WE_setB = 0;
+        WE_setC = 1;
+        WE_setD = 0;
+      end
+      2'b11: begin
+        WE_setA = 0;
+        WE_setB = 0;
+        WE_setC = 0;
+        WE_setD = 1;
+      end
+    endcase
 
+    if(set_used == 2'b00) begin
       tagA_NEW[13] = 1;                   //valid bit == 1
       tagA_NEW[12] = 0;                   //dirt bit == 0
-      tagA_NEW[9:0] = read_addr_old[19:10];  //tag
+      tagA_NEW[9:0] = read_addr[19:10];  //tag
     end
     else begin
-      WE_setA = 0;
-
       tagA_NEW[13:12] = tagA[13:12];
       tagA_NEW[9:0] = tagA[9:0];
     end
 
     if(set_used == 2'b01) begin
-      WE_setB = 1;
-
       tagB_NEW[13] = 1;                   //valid bit == 1
       tagB_NEW[12] = 0;                   //dirt bit == 0
-      tagB_NEW[9:0] = read_addr_old[19:10];  //tag
+      tagB_NEW[9:0] = read_addr[19:10];  //tag
     end
     else begin
-      WE_setB = 0;
-
       tagB_NEW[13:12] = tagB[13:12];
       tagB_NEW[9:0] = tagB[9:0];
     end
 
     if(set_used == 2'b10) begin
-      WE_setC = 1;
-
       tagC_NEW[13] = 1;                   //valid bit == 1
       tagC_NEW[12] = 0;                   //dirt bit == 0
-      tagC_NEW[9:0] = read_addr_old[19:10];  //tag
+      tagC_NEW[9:0] = read_addr[19:10];  //tag
     end
     else begin
-      WE_setC = 0;
-
       tagC_NEW[13:12] = tagC[13:12];
       tagC_NEW[9:0] = tagC[9:0];
     end
 
     if(set_used == 2'b11) begin
-      WE_setD = 1;
-
       tagD_NEW[13] = 1;                   //valid bit == 1
       tagD_NEW[12] = 0;                   //dirt bit == 0
-      tagD_NEW[9:0] = read_addr_old[19:10];  //tag
+      tagD_NEW[9:0] = read_addr[19:10];  //tag
     end
     else begin
-      WE_setD = 0;
-
       tagD_NEW[13:12] = tagD[13:12];
       tagD_NEW[9:0] = tagD[9:0];
     end
@@ -278,6 +290,7 @@ always_comb begin
   else begin    //nezapisuje se ani se necte
 
     MASK = 32'h11111111;
+
     WE_tag = 0;
     WE_setA = 0;
     WE_setB = 0;
@@ -296,7 +309,7 @@ always_comb begin
   end
 
 
-  if( ((state == 2'b01) && (cache_miss == 0)) || ((state == 2'b10) && (fetch == 1)) )
+  if( ((state == 2'b01) && (cache_miss == 0)) || ((state == 2'b10) && (fetch == 1)) ) begin
 
     case(set_used)          //aktualizace LRU bitu
       2'b00: begin
@@ -351,6 +364,15 @@ always_comb begin
         tagD_NEW[11:10] = 0;
       end
     endcase
+  end
+  else begin
+
+    tagA_NEW[11:10] = 0;       //dont care
+    tagB_NEW[11:10] = 0;       //dont care
+    tagC_NEW[11:10] = 0;       //dont care
+    tagD_NEW[11:10] = 0;       //dont care
+
+  end
 end
 
 defparam icache_setA.RAM_low.INIT_0 =
@@ -381,7 +403,7 @@ RAM256x32 icache_setA(.RCLK_c(CLK),
                       .WCLKE_c(WE_setA),
                       .WE_c(WE_setA),
                       .RADDR_c(RADDR_CACHE),
-                      .WADDR_c(read_addr_old[9:2]),
+                      .WADDR_c(read_addr[9:2]),
                       .MASK_IN(0),
                       .WDATA_IN(write_data),
                       .RDATA_OUT(RDATA_setA)
@@ -394,7 +416,7 @@ RAM256x16 icache_tagA(.RCLK_c(CLK),
                       .WCLKE_c(WE_tag),
                       .WE_c(WE_tag),
                       .RADDR_c(RADDR_TAG),
-                      .WADDR_c(read_addr_old[9:2]),
+                      .WADDR_c(read_addr[9:2]),
                       .MASK_IN(0),
                       .WDATA_IN(0),
                       .RDATA_OUT(tagA)
@@ -407,7 +429,7 @@ RAM256x32 icache_setB(.RCLK_c(CLK),
                       .WCLKE_c(WE_setB),
                       .WE_c(WE_setB),
                       .RADDR_c(RADDR_CACHE),
-                      .WADDR_c(read_addr_old[9:2]),
+                      .WADDR_c(read_addr[9:2]),
                       .MASK_IN(0),
                       .WDATA_IN(write_data),
                       .RDATA_OUT(RDATA_setB)
@@ -420,7 +442,7 @@ RAM256x16 icache_tagB(.RCLK_c(CLK),
                       .WCLKE_c(WE_tag),
                       .WE_c(WE_tag),
                       .RADDR_c(RADDR_TAG),
-                      .WADDR_c(read_addr_old[9:2]),
+                      .WADDR_c(read_addr[9:2]),
                       .MASK_IN(0),
                       .WDATA_IN(0),
                       .RDATA_OUT(tagB)
@@ -433,7 +455,7 @@ RAM256x32 icache_setC(.RCLK_c(CLK),
                       .WCLKE_c(WE_setC),
                       .WE_c(WE_setC),
                       .RADDR_c(RADDR_CACHE),
-                      .WADDR_c(read_addr_old[9:2]),
+                      .WADDR_c(read_addr[9:2]),
                       .MASK_IN(0),
                       .WDATA_IN(write_data),
                       .RDATA_OUT(RDATA_setC)
@@ -446,7 +468,7 @@ RAM256x16 icache_tagC(.RCLK_c(CLK),
                       .WCLKE_c(WE_tag),
                       .WE_c(WE_tag),
                       .RADDR_c(RADDR_TAG),
-                      .WADDR_c(read_addr_old[9:2]),
+                      .WADDR_c(read_addr[9:2]),
                       .MASK_IN(0),
                       .WDATA_IN(0),
                       .RDATA_OUT(tagC)
@@ -459,7 +481,7 @@ RAM256x32 icache_setD(.RCLK_c(CLK),
                       .WCLKE_c(WE_setD),
                       .WE_c(WE_setD),
                       .RADDR_c(RADDR_CACHE),
-                      .WADDR_c(read_addr_old[9:2]),
+                      .WADDR_c(read_addr[9:2]),
                       .MASK_IN(0),
                       .WDATA_IN(write_data),
                       .RDATA_OUT(RDATA_setD)
@@ -472,7 +494,7 @@ RAM256x16 icache_tagD(.RCLK_c(CLK),
                       .WCLKE_c(WE_tag),
                       .WE_c(WE_tag),
                       .RADDR_c(RADDR_TAG),
-                      .WADDR_c(read_addr_old[9:2]),
+                      .WADDR_c(read_addr[9:2]),
                       .MASK_IN(0),
                       .WDATA_IN(0),
                       .RDATA_OUT(tagD)
