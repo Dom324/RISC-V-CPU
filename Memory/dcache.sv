@@ -55,7 +55,6 @@ module dcache(
     wire [15:0] tagA, tagB, tagC, tagD;
     wire [31:0] RDATA_setA, RDATA_setB, RDATA_setC, RDATA_setD;
 
-    logic [19:0] read_addr_old, write_addr_old;
     logic [2:0] state;
 
 //initial state = 0;
@@ -67,11 +66,9 @@ always_ff @ (posedge CLK) begin
           2'b00: begin                    //stav == 0, cache je neaktivni
             if(read_en) begin
               state <= 1;
-              read_addr_old <= read_addr;
             end
             else if(write_en) begin
               state <= 2;
-              write_addr_old <= write_addr;
             end
             else state <= 0;
           end
@@ -81,11 +78,9 @@ always_ff @ (posedge CLK) begin
 
               if(read_en) begin
                 state <= 1;
-                read_addr_old <= read_addr;
               end
               else if(write_en) begin
                 state <= 2;
-                write_addr_old <= write_addr;
               end
               else state <= 0;
 
@@ -99,11 +94,9 @@ always_ff @ (posedge CLK) begin
 
             if(read_en) begin
               state <= 1;
-              read_addr_old <= read_addr;
             end
             else if(write_en) begin
               state <= 2;
-              write_addr_old <= write_addr;
             end
             else state <= 0;
 
@@ -397,108 +390,76 @@ always_comb begin
   end
 
   //fetchujeme data
-  else if(state == 2'b11) begin
+  else if((state == 2'b11) && (fetch == 1)) begin
 
-    if(fetch) begin
+    MASK = 32'h00000000;
+    WE_tag = 1;
 
-      MASK = 32'h00000000;
+    case(set_used)
+      2'b00: begin
+        WE_setA = 1;
+        WE_setB = 0;
+        WE_setC = 0;
+        WE_setD = 0;
+      end
+      2'b01: begin
+        WE_setA = 0;
+        WE_setB = 1;
+        WE_setC = 0;
+        WE_setD = 0;
+      end
+      2'b10: begin
+        WE_setA = 0;
+        WE_setB = 0;
+        WE_setC = 1;
+        WE_setD = 0;
+      end
+      2'b11: begin
+        WE_setA = 0;
+        WE_setB = 0;
+        WE_setC = 0;
+        WE_setD = 1;
+      end
+    endcase
 
-      WE_tag = 1;
-
-      case(set_used)
-        2'b00: begin
-          WE_setA = 1;
-          WE_setB = 0;
-          WE_setC = 0;
-          WE_setD = 0;
-        end
-        2'b01: begin
-          WE_setA = 0;
-          WE_setB = 1;
-          WE_setC = 0;
-          WE_setD = 0;
-        end
-        2'b10: begin
-          WE_setA = 0;
-          WE_setB = 0;
-          WE_setC = 1;
-          WE_setD = 0;
-        end
-        2'b11: begin
-          WE_setA = 0;
-          WE_setB = 0;
-          WE_setC = 0;
-          WE_setD = 1;
-        end
-      endcase
-
-      if(set_used == 2'b00) begin
-        tagA_NEW[13] = 1;                   //valid bit == 1
-        tagA_NEW[12] = 0;                   //dirt bit == 0
-        tagA_NEW[9:0] = write_addr[19:10];  //tag
-      end
-      else begin
-        tagA_NEW[13:12] = tagA[13:12];
-        tagA_NEW[9:0] = tagA[9:0];
-      end
-
-      if(set_used == 2'b01) begin
-        tagB_NEW[13] = 1;                   //valid bit == 1
-        tagB_NEW[12] = 0;                   //dirt bit == 0
-        tagB_NEW[9:0] = write_addr[19:10];  //tag
-      end
-      else begin
-        tagB_NEW[13:12] = tagB[13:12];
-        tagB_NEW[9:0] = tagB[9:0];
-      end
-
-      if(set_used == 2'b10) begin
-        tagC_NEW[13] = 1;                   //valid bit == 1
-        tagC_NEW[12] = 0;                   //dirt bit == 0
-        tagC_NEW[9:0] = write_addr[19:10];  //tag
-      end
-      else begin
-        tagC_NEW[13:12] = tagC[13:12];
-        tagC_NEW[9:0] = tagC[9:0];
-      end
-
-      if(set_used == 2'b11) begin
-        tagD_NEW[13] = 1;                   //valid bit == 1
-        tagD_NEW[12] = 0;                   //dirt bit == 0
-        tagD_NEW[9:0] = write_addr[19:10];  //tag
-      end
-      else begin
-        tagD_NEW[13:12] = tagD[13:12];
-        tagD_NEW[9:0] = tagD[9:0];
-      end
+    if(set_used == 2'b00) begin
+      tagA_NEW[13] = 1;                   //valid bit == 1
+      tagA_NEW[12] = 0;                   //dirt bit == 0
+      tagA_NEW[9:0] = write_addr[19:10];  //tag
     end
     else begin
+      tagA_NEW[13:12] = tagA[13:12];
+      tagA_NEW[9:0] = tagA[9:0];
+    end
 
-      MASK = 32'hffffffff;
+    if(set_used == 2'b01) begin
+      tagB_NEW[13] = 1;                   //valid bit == 1
+      tagB_NEW[12] = 0;                   //dirt bit == 0
+      tagB_NEW[9:0] = write_addr[19:10];  //tag
+    end
+    else begin
+      tagB_NEW[13:12] = tagB[13:12];
+      tagB_NEW[9:0] = tagB[9:0];
+    end
 
-      WE_tag = 0;
+    if(set_used == 2'b10) begin
+      tagC_NEW[13] = 1;                   //valid bit == 1
+      tagC_NEW[12] = 0;                   //dirt bit == 0
+      tagC_NEW[9:0] = write_addr[19:10];  //tag
+    end
+    else begin
+      tagC_NEW[13:12] = tagC[13:12];
+      tagC_NEW[9:0] = tagC[9:0];
+    end
 
-      WE_setA = 0;
-      WE_setB = 0;
-      WE_setC = 0;
-      WE_setD = 0;
-
-      tagA_NEW[13] = 1;                   //dont care
-      tagA_NEW[12] = 1;                   //dont care
-      tagA_NEW[9:0] = write_addr[19:10];  //dont care
-
-      tagB_NEW[13] = 1;                   //dont care
-      tagB_NEW[12] = 1;                   //dont care
-      tagB_NEW[9:0] = write_addr[19:10];  //dont care
-
-      tagC_NEW[13] = 1;                   //dont care
-      tagC_NEW[12] = 1;                   //dont care
-      tagC_NEW[9:0] = write_addr[19:10];  //dont care
-
-      tagD_NEW[13] = 1;                   //dont care
-      tagD_NEW[12] = 1;                   //dont care
-      tagD_NEW[9:0] = write_addr[19:10];  //dont care
-
+    if(set_used == 2'b11) begin
+      tagD_NEW[13] = 1;                   //valid bit == 1
+      tagD_NEW[12] = 0;                   //dirt bit == 0
+      tagD_NEW[9:0] = write_addr[19:10];  //tag
+    end
+    else begin
+      tagD_NEW[13:12] = tagD[13:12];
+      tagD_NEW[9:0] = tagD[9:0];
     end
   end
   //konec fetchovani
@@ -508,7 +469,6 @@ always_comb begin
     MASK = 32'hffffffff;
 
     WE_tag = 0;
-
     WE_setA = 0;
     WE_setB = 0;
     WE_setC = 0;
@@ -561,11 +521,7 @@ always_comb begin
 
 
 
-  if(
-      ((state == 2'b01) && (cache_miss == 0)) ||
-      (state == 2'b10) ||
-      ((state == 2'b11) && (fetch == 1))
-    ) begin
+  if( ((state == 2'b01) && (cache_miss == 0)) || (state == 2'b10) || ((state == 2'b11) && (fetch == 1)) ) begin
 
     //aktualizujeme tag, pokud:
     //1. cteme z cache a neni cache cache_miss
