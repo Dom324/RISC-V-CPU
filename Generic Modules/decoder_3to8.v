@@ -1,4 +1,4 @@
-module mux8_single_input
+module decoder_3to8
   (input [2:0] select,
   input  [7:0] a,
   output reg out);
@@ -7,7 +7,7 @@ module mux8_single_input
 
     case(select)
 
-      3'b000: out = a[0];
+    3'b000: out = a[0];
 	  3'b001: out = a[1];
 	  3'b010: out = a[2];
 	  3'b011: out = a[3];

@@ -1,4 +1,4 @@
-module mux16_single_input
+module decoder_4to16_inv
   (input wire [3:0] select,
   input wire [15:0] a,
   output reg out);
