@@ -1,11 +1,11 @@
-module decoder_4to16_inv
-  (input wire [3:0] select,
-  input wire [15:0] a,
-  output reg out);
+module decoder_4to16_inv(
+  input logic [3:0] select,
+  input logic [15:0] a,
+  output logic out);
 
-  always_comb begin
+always_comb begin
 
-    case(select)
+  case(select)
 
     4'b0000: out = a[15];
 	  4'b0001: out = a[14];
@@ -24,6 +24,6 @@ module decoder_4to16_inv
     4'b1110: out = a[1];
     4'b1111: out = a[0];
 
-    endcase
-  end
+  endcase
+end
 endmodule
