@@ -45,6 +45,8 @@ module dcache(
     output reg [31:0] RDATA_OUT
 );
 
+    logic [19:0] read_addr_old;
+
     reg [31:0] MASK;
     reg [7:0] RADDR_TAG, RADDR_CACHE, WADDR_CACHE, WADDR_TAG;
     reg [15:0] tagA_NEW, tagB_NEW, tagC_NEW, tagD_NEW;
@@ -55,131 +57,134 @@ module dcache(
     wire [15:0] tagA, tagB, tagC, tagD;
     wire [31:0] RDATA_setA, RDATA_setB, RDATA_setC, RDATA_setD;
 
-    logic [2:0] state;
+    logic [1:0] state;
 
 //initial state = 0;
 
 //logika pro meneni stavu cache
 always_ff @ (posedge CLK) begin
-    case(state)
 
-          2'b00: begin                    //stav == 0, cache je neaktivni
-            if(read_en) begin
-              state <= 1;
-            end
-            else if(write_en) begin
-              state <= 2;
-            end
-            else state <= 0;
-          end
+  if(!cache_miss)
+    read_addr_old <= read_addr;
 
-          2'b01: begin                    //stav == 1, z pameti cache se cte
-            if(!cache_miss) begin
+  case(state)      // synopsys full_case parallel_case
 
-              if(read_en) begin
-                state <= 1;
-              end
-              else if(write_en) begin
-                state <= 2;
-              end
-              else state <= 0;
+    2'b00: begin                    //stav == 0, cache je neaktivni
 
-            end
-            else
-              state <= 3;
+      if(read_en) begin
+        state <= 1;
+      end
+      else if(write_en) begin
+        state <= 2;
+      end
 
-          end
+        else state <= 0;
+    end
 
-          2'b10: begin              //stav == 2, do cache se zapisuje
+    2'b01: begin                    //stav == 1, z pameti cache se cte
 
-            if(read_en) begin
-              state <= 1;
-            end
-            else if(write_en) begin
-              state <= 2;
-            end
-            else state <= 0;
+      if(!cache_miss) begin
 
-          end
+        if(read_en) begin
+          state <= 1;
+        end
+        else if(write_en) begin
+          state <= 2;
+        end
+        else state <= 0;
 
-          2'b11: begin                    //stav == 3, do cache se fetchuje, cache cte data
-            if(fetch) state <= 0;
-            else state <= 3;
-          end
+      end
+      else
+        state <= 3;
 
-    endcase
+    end
+
+    2'b10: begin              //stav == 2, do cache se zapisuje
+
+      if(read_en) begin
+        state <= 1;
+      end
+      else if(write_en) begin
+        state <= 2;
+      end
+      else state <= 0;
+
+    end
+
+    2'b11: begin                    //stav == 3, do cache se fetchuje, cache cte data
+      if(fetch) state <= 0;
+      else state <= 3;
+    end
+
+  endcase
 end
 
 always_comb begin
 
-  case(state)
+//defaultni hodnoty
+cache_miss = 0;
+RDATA_OUT = 0;      //dont care
+set_used = 0;       //dont care
+//defaultni hodnoty
+
+  case(state)      // synopsys full_case parallel_case
     2'b00: RADDR_TAG = 0;                  //dont care
     2'b01: RADDR_TAG = read_addr[9:2];     //read
     2'b10: RADDR_TAG = write_addr[9:2];    //write
-    2'b11: RADDR_TAG = read_addr[9:2];     //fetch read
-    default: RADDR_TAG = 0;                 //dont care
+    2'b11: RADDR_TAG = read_addr_old[9:2];     //fetch read
+    //default: RADDR_TAG = 0;                 //dont care
   endcase
 
   RADDR_CACHE = read_addr[9:2];     //read
 
-  case(state)
+  case(state)        // synopsys full_case parallel_case
     2'b00: WADDR_TAG = 0;                  //dont care
     2'b01: WADDR_TAG = read_addr[9:2];     //read
     2'b10: WADDR_TAG = write_addr[9:2];    //write
-    2'b11: WADDR_TAG = read_addr[9:2];     //fetch read
-    default: WADDR_TAG = 0;                 //dont care
+    2'b11: WADDR_TAG = read_addr_old[9:2];     //fetch read
+    //default: WADDR_TAG = 0;                 //dont care
   endcase
 
-  case(state)
+  case(state)          // synopsys full_case parallel_case
     2'b00: WADDR_CACHE = 0;                  //dont care
     2'b01: WADDR_CACHE = 0;     //read
     2'b10: WADDR_CACHE = write_addr[9:2];    //write
-    2'b11: WADDR_CACHE = read_addr[9:2];     //fetch read
-    default: WADDR_CACHE = 0;                 //dont care
+    2'b11: WADDR_CACHE = read_addr_old[9:2];     //fetch read
+    //default: WADDR_CACHE = 0;                 //dont care
   endcase
 
 
-  case(state)
+  case(state)        // synopsys full_case parallel_case
     2'b00: begin
       cache_miss = 0;
-      RDATA_OUT = 0;      //dont care
-      set_used = 0;       //dont care
     end
 
     2'b01: begin
 
 
       //cteme data
-      if( (tagA[9:0] == read_addr[19:10]) & (tagA[13] == 1) ) begin
+      if( (tagA[9:0] == read_addr_old[19:10]) & (tagA[13] == 1) ) begin
         RDATA_OUT = RDATA_setA;
         set_used = 2'b00;
         cache_miss = 0;
       end
 
-      else if( (tagB[9:0] == read_addr[19:10]) & (tagB[13] == 1) ) begin
+      else if( (tagB[9:0] == read_addr_old[19:10]) & (tagB[13] == 1) ) begin
           RDATA_OUT = RDATA_setB;
           set_used = 2'b01;
           cache_miss = 0;
       end
 
-      else if( (tagC[9:0] == read_addr[19:10]) & (tagC[13] == 1) ) begin
+      else if( (tagC[9:0] == read_addr_old[19:10]) & (tagC[13] == 1) ) begin
           RDATA_OUT = RDATA_setC;
           set_used = 2'b10;
           cache_miss = 0;
       end
 
-      else if( (tagD[9:0] == read_addr[19:10]) & (tagD[13] == 1) ) begin
+      else if( (tagD[9:0] == read_addr_old[19:10]) & (tagD[13] == 1) ) begin
           RDATA_OUT = RDATA_setD;
           set_used = 2'b11;
           cache_miss = 0;
-      end
-
-      else begin
-
-        cache_miss = 1;
-        RDATA_OUT = 0;              //dont care
-        set_used = 0;               //dont care
-
       end
       //konec cteni dat
     end
@@ -255,18 +260,7 @@ always_comb begin
 
         end
       end
-      else begin
-        cache_miss = 1;
-        RDATA_OUT = 0;           //dont care
-        set_used = 2'b00;         //dont care
-      end
-    end
-
-    default: begin
-
-      cache_miss = 0;
-      RDATA_OUT = 0;           //dont care
-      set_used = 2'b00;         //dont care
+      else cache_miss = 1;
 
     end
   endcase
@@ -277,25 +271,30 @@ end
 
 always_comb begin
 
+//defaultni hodnoty
+  MASK = 32'hffffffff;
+  WE_tag = 0;
+  WE_setA = 0;
+  WE_setB = 0;
+  WE_setC = 0;
+  WE_setD = 0;
+
+  tagA_NEW[13:12] = tagA[13:12];
+  tagB_NEW[13:12] = tagB[13:12];
+  tagC_NEW[13:12] = tagC[13:12];
+  tagD_NEW[13:12] = tagD[13:12];
+
+  tagA_NEW[9:0] = tagA[9:0];
+  tagB_NEW[9:0] = tagB[9:0];
+  tagC_NEW[9:0] = tagC[9:0];
+  tagD_NEW[9:0] = tagD[9:0];
+//defaultni hodnoty
+
 //cteme data
   if((state == 2'b01) && (cache_miss == 0)) begin
 
-    MASK = 32'h11111111;
+    MASK = 32'hffffffff;
     WE_tag = 1;
-    WE_setA = 0;
-    WE_setB = 0;
-    WE_setC = 0;
-    WE_setD = 0;
-
-    tagA_NEW[13:12] = tagA[13:12];
-    tagB_NEW[13:12] = tagB[13:12];
-    tagC_NEW[13:12] = tagC[13:12];
-    tagD_NEW[13:12] = tagD[13:12];
-
-    tagA_NEW[9:0] = tagA[9:0];
-    tagB_NEW[9:0] = tagB[9:0];
-    tagC_NEW[9:0] = tagC[9:0];
-    tagD_NEW[9:0] = tagD[9:0];
 
   end
 //konec cteni dat
@@ -321,31 +320,11 @@ always_comb begin
     else if(store_size == 2'b11) MASK = 32'hffffffff;     //nelegalni operace, nezapisuje se, proto MASK = 32'hffffffff
     //nastaveni masky podle toho kolik Bytu zapisujeme
 
-    case(set_used)
-      2'b00: begin
-        WE_setA = 1;
-        WE_setB = 0;
-        WE_setC = 0;
-        WE_setD = 0;
-      end
-      2'b01: begin
-        WE_setA = 0;
-        WE_setB = 1;
-        WE_setC = 0;
-        WE_setD = 0;
-      end
-      2'b10: begin
-        WE_setA = 0;
-        WE_setB = 0;
-        WE_setC = 1;
-        WE_setD = 0;
-      end
-      2'b11: begin
-        WE_setA = 0;
-        WE_setB = 0;
-        WE_setC = 0;
-        WE_setD = 1;
-      end
+    case(set_used)         // synopsys full_case parallel_case
+      2'b00: WE_setA = 1;
+      2'b01: WE_setB = 1;
+      2'b10: WE_setC = 1;
+      2'b11: WE_setD = 1;
     endcase
 
     if(set_used == 2'b00) begin
@@ -353,19 +332,11 @@ always_comb begin
       tagA_NEW[12] = 1;                   //dirt bit == 1
       tagA_NEW[9:0] = write_addr[19:10];  //tag
     end
-    else begin
-      tagA_NEW[13:12] = tagA[13:12];
-      tagA_NEW[9:0] = tagA[9:0];
-    end
 
     if(set_used == 2'b01) begin
       tagB_NEW[13] = 1;                   //valid bit == 1
       tagB_NEW[12] = 1;                   //dirt bit == 1
       tagB_NEW[9:0] = write_addr[19:10];  //tag
-    end
-    else begin
-      tagB_NEW[13:12] = tagB[13:12];
-      tagB_NEW[9:0] = tagB[9:0];
     end
 
     if(set_used == 2'b10) begin
@@ -373,19 +344,11 @@ always_comb begin
       tagC_NEW[12] = 1;                   //dirt bit == 1
       tagC_NEW[9:0] = write_addr[19:10];  //tag
     end
-    else begin
-      tagC_NEW[13:12] = tagC[13:12];
-      tagC_NEW[9:0] = tagC[9:0];
-    end
 
     if(set_used == 2'b11) begin
       tagD_NEW[13] = 1;                   //valid bit == 1
       tagD_NEW[12] = 1;                   //dirt bit == 1
       tagD_NEW[9:0] = write_addr[19:10];  //tag
-    end
-    else begin
-      tagD_NEW[13:12] = tagD[13:12];
-      tagD_NEW[9:0] = tagD[9:0];
     end
   end
 
@@ -395,31 +358,11 @@ always_comb begin
     MASK = 32'h00000000;
     WE_tag = 1;
 
-    case(set_used)
-      2'b00: begin
-        WE_setA = 1;
-        WE_setB = 0;
-        WE_setC = 0;
-        WE_setD = 0;
-      end
-      2'b01: begin
-        WE_setA = 0;
-        WE_setB = 1;
-        WE_setC = 0;
-        WE_setD = 0;
-      end
-      2'b10: begin
-        WE_setA = 0;
-        WE_setB = 0;
-        WE_setC = 1;
-        WE_setD = 0;
-      end
-      2'b11: begin
-        WE_setA = 0;
-        WE_setB = 0;
-        WE_setC = 0;
-        WE_setD = 1;
-      end
+    case(set_used)         // synopsys full_case parallel_case
+      2'b00: WE_setA = 1;
+      2'b01: WE_setB = 1;
+      2'b10: WE_setC = 1;
+      2'b11: WE_setD = 1;
     endcase
 
     if(set_used == 2'b00) begin
@@ -427,19 +370,11 @@ always_comb begin
       tagA_NEW[12] = 0;                   //dirt bit == 0
       tagA_NEW[9:0] = write_addr[19:10];  //tag
     end
-    else begin
-      tagA_NEW[13:12] = tagA[13:12];
-      tagA_NEW[9:0] = tagA[9:0];
-    end
 
     if(set_used == 2'b01) begin
       tagB_NEW[13] = 1;                   //valid bit == 1
       tagB_NEW[12] = 0;                   //dirt bit == 0
       tagB_NEW[9:0] = write_addr[19:10];  //tag
-    end
-    else begin
-      tagB_NEW[13:12] = tagB[13:12];
-      tagB_NEW[9:0] = tagB[9:0];
     end
 
     if(set_used == 2'b10) begin
@@ -447,19 +382,11 @@ always_comb begin
       tagC_NEW[12] = 0;                   //dirt bit == 0
       tagC_NEW[9:0] = write_addr[19:10];  //tag
     end
-    else begin
-      tagC_NEW[13:12] = tagC[13:12];
-      tagC_NEW[9:0] = tagC[9:0];
-    end
 
     if(set_used == 2'b11) begin
       tagD_NEW[13] = 1;                   //valid bit == 1
       tagD_NEW[12] = 0;                   //dirt bit == 0
       tagD_NEW[9:0] = write_addr[19:10];  //tag
-    end
-    else begin
-      tagD_NEW[13:12] = tagD[13:12];
-      tagD_NEW[9:0] = tagD[9:0];
     end
   end
   //konec fetchovani
@@ -519,6 +446,10 @@ always_comb begin
   tagC_NEW[15:14] = 0;
   tagD_NEW[15:14] = 0;
 
+  tagA_NEW[11:10] = 0;
+  tagB_NEW[11:10] = 0;
+  tagC_NEW[11:10] = 0;
+  tagD_NEW[11:10] = 0;
 
 
   if( ((state == 2'b01) && (cache_miss == 0)) || (state == 2'b10) || ((state == 2'b11) && (fetch == 1)) ) begin
@@ -578,14 +509,6 @@ always_comb begin
         tagD_NEW[11:10] = 0;
       end
     endcase
-  end
-  else begin
-
-    tagA_NEW[11:10] = 0;       //dont care
-    tagB_NEW[11:10] = 0;       //dont care
-    tagC_NEW[11:10] = 0;       //dont care
-    tagD_NEW[11:10] = 0;       //dont care
-
   end
 end
 
