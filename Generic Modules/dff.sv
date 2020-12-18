@@ -3,13 +3,13 @@ module dff(
   output logic q
 );
 
-  
+
 always_ff @ (posedge clk) begin
 
   if(!reset)
-    q = data;
+    q <= data;
   else
-    q = 0;
+    q <= 0;
 
 end
 

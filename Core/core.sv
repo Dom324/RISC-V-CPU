@@ -20,41 +20,10 @@ module core(
   logic [1:0] wdSel;
 
 
-  //logika PC
-  assign PCplus4 = PC + 4;
-
-  mux4 #(32) pcSelect({pcControl, stall_pc}, PCplus4, aluRes, PC, PC, nextPC);
-
-  always_ff @ (posedge CLK) begin
-    //if(!reset)
-      PC = nextPC;
-    //else PC = 0;
-  end
-  //logika PC
-
-
-  //stall logika
-  always_comb begin
-
-    if(stall_mem == 1) begin
-	  stall_pc = 1;
-	  stall_reg = 1;
-	end
-	else begin
-	  stall_pc = 0;
-	  stall_reg = 0;
-	end
-
-    if(stall_reg == 1) we_reg = 0;
-	else we_reg = we_reg_controller;
-
-  end
-  //stall logika
-
 
   decode decoder(instr_fetch, funct3, funct7, op, rd, rs1, rs2, imm, instrType);
 
-  controller controller(op, instrType, funct3, we_reg_controller, pcControl, memory_en, aluBSel, wdSel, store_size);
+  controller controller(CLK, op, instrType, funct3, we_reg_controller, pcControl, memory_en, aluBSel, wdSel, store_size, controller_stall);
 
   mux4 #(32) wdSelect(wdSel, aluRes, memData, PCplus4, imm, wd);
 
@@ -64,34 +33,74 @@ module core(
 
   alu alu(rd1, aluB, funct3, funct7, aluRes);
 
-  //load store unit
+  //logika PC
+  assign PCplus4 = PC + 4;
+
+  mux2 #(32) pcSelect(pcControl, PCplus4, aluRes, nextPC);
+
+  initial PC <= 0;
+
+always_ff @ (posedge CLK) begin
+  if(!stall_pc)
+    PC <= nextPC;
+
+end
+  //logika PC
+
+  //stall logika
+always_comb begin
+
+  if(stall_mem == 1) begin
+	  stall_pc = 1;
+	  stall_reg = 1;
+	end
+	else if(controller_stall) begin
+    stall_pc = 1;
+	  stall_reg = 1;
+  end
+  else begin
+    stall_pc = 0;
+	  stall_reg = 0;
+	end
+
+  if(stall_reg == 1) we_reg = 0;
+	else we_reg = we_reg_controller;
+
+end
+  //stall logika
+
+//load store unit
   assign mem_addr = aluRes;
-  always_comb begin
 
-    if(funct7 == 7'b0000011) begin			//jedna se o LOAD instrukci, nacitaji se data z pameti
+always_comb begin
 
-      case(funct3)
+//defaultni hodnoty
+memData = 0;
+mem_write_data = 0;
+//defaultni hodnoty
 
-		3'b000: memData = {{24{mem_read_data[7]}}, mem_read_data[7:0]};				//instrukce LB, z pameti se nacita jeden Byte, dela se sign extension
-		3'b001: memData = {{16{mem_read_data[7]}}, mem_read_data[15:0]};			//instrukce LH, z pameti se nacitaji dva Byty, dela se sign extension
-		3'b010: memData = mem_read_data;											//instrukce LW, z pameti se nacita ctyri Byty
-		3'b100: memData = {{24{1'b0}}, mem_read_data[7:0]};							//instrukce LBU, z pameti se nacita jeden Byte, nedela se sign extension
-		3'b101: memData = {{16{1'b0}}, mem_read_data[15:0]};						//instrukce LHU, z pameti se nacitaji dva Byty, nedela se sign extension
-		default: memData = 0;
+  if(funct7 == 7'b0000011) begin			//jedna se o LOAD instrukci, nacitaji se data z pameti
+
+    case(funct3)       // synopsys full_case
+
+		  3'b000: memData = {{24{mem_read_data[7]}}, mem_read_data[7:0]};				//instrukce LB, z pameti se nacita jeden Byte, dela se sign extension
+		  3'b001: memData = {{16{mem_read_data[7]}}, mem_read_data[15:0]};			//instrukce LH, z pameti se nacitaji dva Byty, dela se sign extension
+		  3'b010: memData = mem_read_data;											                //instrukce LW, z pameti se nacita ctyri Byty
+		  3'b100: memData = {{24{1'b0}}, mem_read_data[7:0]};						     	  //instrukce LBU, z pameti se nacita jeden Byte, nedela se sign extension
+		  3'b101: memData = {{16{1'b0}}, mem_read_data[15:0]};						      //instrukce LHU, z pameti se nacitaji dva Byty, nedela se sign extension
+		//default: memData = 0;
 	  endcase
 	end
-	else memData = 0;
 
 	if(op == 7'b0100011) begin			//jedna se o STORE instrukci, do pameti se ukladaji data
 
-	  case(funct3)
+    case(funct3)      // synopsys full_case
 
-	  3'b000: mem_write_data = {{24{1'b0}}, rd2[7:0]};				//instrukce SB, do pameti se uklada jeden Byte
-		3'b001: mem_write_data = {{16{1'b0}}, rd2[15:0]};				//instrukce SH, do pameti se ukladaji dva Byty
-		3'b010: mem_write_data = rd2;									//instrukce SW, do pameti se ukladaji ctyri Byty
-		default: mem_write_data = 0;
+	    3'b000: mem_write_data = {{24{1'b0}}, rd2[7:0]};				//instrukce SB, do pameti se uklada jeden Byte
+		  3'b001: mem_write_data = {{16{1'b0}}, rd2[15:0]};				//instrukce SH, do pameti se ukladaji dva Byty
+		  3'b010: mem_write_data = rd2;									//instrukce SW, do pameti se ukladaji ctyri Byty
+		//default: mem_write_data = 0;
 	  endcase
 	end
-	else mem_write_data = 0;
-  end
+end
 endmodule

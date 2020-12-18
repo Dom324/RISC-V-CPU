@@ -59,7 +59,8 @@ module TinyFPGA_BX (
 // deactivate USB
 assign USBPU = 1'b0;
 
-  logic keyboard_data, keyboard_clock, hsync, vsync, VGA_pixel, CLK_VGA, reset;
+  logic keyboard_data, keyboard_clock, hsync, vsync, VGA_pixel, CLK_VGA, CLK_CPU, reset;
+  logic [2:0] clk_div;
 
   assign reset = PIN_5;
   assign keyboard_data = PIN_12;
@@ -68,6 +69,15 @@ assign USBPU = 1'b0;
   assign PIN_11 = vsync;
   assign PIN_14 = VGA_pixel;
   assign PIN_15 = CLK_VGA;
+
+/*always_ff @ (posedge CLK_16mhz) begin
+
+  if(CLK_16mhz) clk_div <= clk_div + 1;
+
+  if(clk_div[2]) CLK_CPU <= 1;
+  else CLK_CPU <= 0;
+
+end*/
 
   //PLL obvod generujici CLK pro VGA obvod, 40MHz
 pll CLK_VGA_PLL(
@@ -86,9 +96,12 @@ pll CLK_VGA_PLL(
                 .hsync(hsync),
                 .vsync(vsync),
                 .VGA_pixel(VGA_pixel),
-                .reset(reset)
+                .reset(reset),
+                .SPI_CS(SPI_SS),      //SPI rozhrani
+                .SPI_SCK(SPI_SCK),    //SPI rozhrani
+                .SPI_SI(SPI_IO0),     //SPI rozhrani
+                .SPI_SO(SPI_IO1)      //SPI rozhrani
                 );
-
 
 
 //SOS blikani na signalizaci, ze se kod nahral spravne
@@ -139,10 +152,10 @@ pll CLK_VGA_PLL(
   assign PIN_24 = 1'bz;
 
 // SPI flash interface on bottom of board
-  assign SPI_SS = 1'bz;
-  assign SPI_SCK = 1'bz;
-  assign SPI_IO0 = 1'bz;
-  assign SPI_IO1 = 1'bz;
+  //assign SPI_SS = 1'bz;
+  //assign SPI_SCK = 1'bz;
+  //assign SPI_IO0 = 1'bz;
+  //assign SPI_IO1 = 1'bz;
   assign SPI_IO2 = 1'bz;
   assign SPI_IO3 = 1'bz;
 

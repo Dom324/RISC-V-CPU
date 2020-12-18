@@ -14,31 +14,28 @@ Tento preklad se provadi prictenim konstanty 0x50000 k adrese CPU.
 Zaroven kontroler provadi rozsireni adresy z 20 bitu na 24 bitu (horni 4 bity se nastavi na 0)
 
 Postup cteni dat z flash pameti:
-  1. Na pinu SCK je hodinovy signal
-  2. Kontroler nastavi pin CS na log. 0
-  3. Kontroler postupne posle na pin SI opcode "0x03" (v binarni soustave "00000011") - tim pameti flash rekne, ze chce cist data
-  4. Kontroler postupne posle na pin SI 24 adresnich bitu
-  5. Kontroler cte data z pinu SO
-  6. Az kontroler uspesne obdrzi vsech 32 bitu dat, nastavi pin CS na log. 1 a tim ukonci cteni
+  1. Na pinu SPI_SCK je hodinovy signal
+  2. Kontroler nastavi pin SPI_CS na log. 0
+  3. Kontroler postupne posle na pin SPI_SI opcode "0x03" (v binarni SPI_SOustave "00000011") - tim pameti flash rekne, ze chce cist data
+  4. Kontroler postupne posle na pin SPI_SI 24 adresnich bitu
+  5. Kontroler cte data z pinu SPI_SO
+  6. Az kontroler uspesne obdrzi vsech 32 bitu dat, nastavi pin SPI_CS na log. 1 a tim ukonci cteni
 
 */
 module spi_controller(
     input logic CLK, icache_miss, dcache_miss,
-    output logic fetch,
+    output logic SPI_data_ready,
 
     input logic [19:0] dcache_addr, icache_addr,
     output logic [31:0] SPI_data,
 
     //SPI rozhrani
-    output logic CS, SCK, SI,
-    input logic SO
+    output logic SPI_CS, SPI_SCK, SPI_SI,
+    input logic SPI_SO
     //SPI rozhrani
 );
 
 localparam opcode = 8'h03;					//opcode na cteni dat
-
-  assign SCK = CLK;         //clock pro SPI sbernici
-  assign CS = busy;         //enable pin pro flash pamet
 
   logic [2:0] bit_counter;
   logic [1:0] byte_counter;
@@ -49,9 +46,13 @@ localparam opcode = 8'h03;					//opcode na cteni dat
   logic busy;
   logic receiving;
 
-  //SI bit na vystupu
-  decoder_3to8_inv output_select(bit_counter, flash_byte, SI);
-  shift_reg #(32) SPI_buffer(CLK, receiving, SO, SPI_data);
+  assign SPI_SCK = CLK;         //clock pro SPI sbernici
+  assign SPI_CS = busy;         //enable pin pro flash pamet
+
+
+  //SPI_SI bit na vystupu
+  decoder_3to8_inv output_select(bit_counter, flash_byte, SPI_SI);
+  shift_reg #(32) SPI_buffer(CLK, receiving, SPI_SO, SPI_data);
 
 always_ff @ (posedge CLK) begin
 
@@ -72,11 +73,12 @@ always_ff @ (posedge CLK) begin
       busy <= 0;
     end
 
-  end begin
+  end
+  else begin
 
     flash_addr[19:0] <= flash_addr[19:0];
 
-    if(fetch) begin
+    if(SPI_data_ready) begin
       busy <= 0;
     end
     else busy <= 1;
@@ -123,8 +125,8 @@ always_ff @ (posedge CLK) begin
   if(receiving == 1) bits_received <= bits_received + 1;
   else bits_received <= 0;
 
-  if(bits_received == 5'b11111) fetch = 1;
-  else fetch = 0;
+  if(bits_received == 5'b11111) SPI_data_ready = 1;
+  else SPI_data_ready = 0;
 
 end
 

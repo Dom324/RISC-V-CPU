@@ -47,11 +47,11 @@ localparam v_bp = 23;					//vertikalni back porch
   logic [10:0] horizontal_line;
   logic [9:0] vertical_line;
 
-  mux16_single_input output_select(counter, pixel_row, data_selected);
+  decoder_4to16_inv output_select(counter, pixel_row, data_selected);
 
 always_ff @ (posedge CLK_VGA) begin
 
-  line_number = line_number;
+  line_number <= line_number;
 
   /*if(reset) begin
 
@@ -60,10 +60,10 @@ always_ff @ (posedge CLK_VGA) begin
   else begin*/
   if(end_of_line) begin
     if(!end_of_frame) begin
-      if(line_number == 5'b10011) line_number = 5'b00000;
-      else line_number = line_number + 1;
+      if(line_number == 5'b10011) line_number <= 5'b00000;
+      else line_number <= line_number + 1;
     end
-    else line_number = 0;
+    else line_number <= 0;
   end
   //end
 end

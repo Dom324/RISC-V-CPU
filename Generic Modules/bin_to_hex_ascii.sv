@@ -2,9 +2,11 @@ module bin_to_hex_ascii(
   input logic [3:0] in,
   output logic [7:0] out);
 
-  always_comb begin
+always_comb begin
 
-case(in)
+out = 0;
+
+case(in)      // synopsys full_case parallel_case
   0: out = 8'h30;
   1: out = 8'h31;
   2: out = 8'h32;

@@ -15,23 +15,20 @@ module display_engine(
   logic [10:0] read_addr;
 
 
-  always_ff @ (posedge CLK_VGA) begin
+always_ff @ (posedge CLK_VGA) begin
 
-    //if(!reset) begin
-      read_addr = read_addr;
+  if(!end_of_frame) begin
 
-      if(!end_of_frame) begin
+    if(newData) read_addr <= read_addr + 1;
 
-        if(newData) read_addr++;
+    if(end_of_line)
+      if(line_number < 19) read_addr <= read_addr - 50;
 
-        if(end_of_line)
-          if(line_number < 19) read_addr = read_addr - 50;
-
-      end
-      else read_addr = 0;
+  end
+  else read_addr <= 0;
     //end
     //else read_addr = 0;
-  end
+end
 
 vga vga(
         .CLK_VGA(CLK_VGA),

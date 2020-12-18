@@ -3,8 +3,10 @@ module mux2
   (input logic select,
   input logic  [width-1:0] a, b,
   output logic [width-1:0] out);
-  
+
 always_comb begin
+
+out = 0;
 
   if(select)
     out = b;

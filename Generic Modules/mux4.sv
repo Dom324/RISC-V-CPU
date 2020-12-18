@@ -4,9 +4,11 @@ module mux4
   input logic  [width-1:0] a, b, c, d,
   output logic [width-1:0] out);
 
-  always_comb begin
+always_comb begin
 
-    case(select)      // synopsys full_case
+out = 0;
+
+    case(select)      // synopsys full_case parallel_case
 
       2'b00: out = a;
 	    2'b01: out = b;

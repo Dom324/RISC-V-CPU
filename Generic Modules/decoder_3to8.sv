@@ -5,7 +5,9 @@ module decoder_3to8(
 
 always_comb begin
 
-  case(select)
+out = 0;
+
+  case(select)      // synopsys full_case parallel_case
 
     3'b000: out = a[0];
 	  3'b001: out = a[1];

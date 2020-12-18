@@ -10,13 +10,13 @@ module regfile(
   assign rd1 = registers[ra1];
   assign rd2 = registers[ra2];
 
-always_ff @ (negedge clk) begin
+always_ff @ (posedge clk) begin
 
   if(we)
     if(wa != 0)
-	  registers[wa] <= wd;
-	else
-	  registers[0] <= 0;
+	    registers[wa] <= wd;
+	  else
+	    registers[0] <= 0;
 
 end
 endmodule

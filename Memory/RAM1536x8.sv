@@ -22,33 +22,53 @@ always_comb begin
   if(RE == 1) begin
     if(RADDR[10:9] == 2'b00) begin      //cte se z bank0
       RE_bank0 = 1;
+      RE_bank1 = 0;
+      RE_bank2 = 0;
       RDATA_OUT = RDATA_bank0;
     end
-    if(RADDR[10:9] == 2'b01) begin      //cte se z bank1
+    else if(RADDR[10:9] == 2'b01) begin      //cte se z bank1
+      RE_bank0 = 0;
       RE_bank1 = 1;
+      RE_bank2 = 0;
       RDATA_OUT = RDATA_bank1;
     end
-    if(RADDR[10:9] == 2'b10) begin      //cte se z bank2
+    else if(RADDR[10:9] == 2'b10) begin      //cte se z bank2
+      RE_bank0 = 0;
+      RE_bank1 = 0;
       RE_bank2 = 1;
       RDATA_OUT = RDATA_bank2;
     end
+    else begin
+      RE_bank0 = 0;
+      RE_bank1 = 0;
+      RE_bank2 = 0;
+      RDATA_OUT = 0;
+    end
+  end
+  else begin
+    RE_bank0 = 0;
+    RE_bank1 = 0;
+    RE_bank2 = 0;
+    RDATA_OUT = 0;
   end
 end
 
 always @ (negedge WCLK) begin
 
-  WE_bank0 = 0;
-  WE_bank1 = 0;
-  WE_bank2 = 0;
-
   if(WE == 1) begin
     if(WADDR[10:9] == 2'b00) begin      //cte se z bank0
       WE_bank0 = 1;
+      WE_bank1 = 0;
+      WE_bank2 = 0;
     end
     if(WADDR[10:9] == 2'b01) begin      //cte se z bank1
+      WE_bank0 = 0;
       WE_bank1 = 1;
+      WE_bank2 = 0;
     end
     if(WADDR[10:9] == 2'b10) begin      //cte se z bank2
+      WE_bank0 = 0;
+      WE_bank1 = 0;
       WE_bank2 = 1;
     end
   end

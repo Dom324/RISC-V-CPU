@@ -5,7 +5,9 @@ module decoder_4to16_inv(
 
 always_comb begin
 
-  case(select)
+out = 0;
+
+  case(select)    // synopsys full_case parallel_case
 
     4'b0000: out = a[15];
 	  4'b0001: out = a[14];

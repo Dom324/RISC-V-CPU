@@ -1,7 +1,11 @@
 module CPU(
   input logic keyboard_data, keyboard_clock,
   input logic CLK_VGA, CLK_CPU, reset,
-  output logic hsync, vsync, VGA_pixel
+  output logic hsync, vsync, VGA_pixel,
+
+  //SPI rozhrani
+  output logic SPI_CS, SPI_SCK, SPI_SI,
+  input logic SPI_SO
   );
 
     logic memory_enable, cache_stall;
@@ -41,7 +45,11 @@ display_engine display_engine(
                 .video_write_addr(video_write_addr),
                 .stall(cache_stall),
                 .instr_fetch(instr_fetch),
-                .read_data(read_data)
+                .read_data(read_data),
+                .SPI_CS(SPI_CS),
+                .SPI_SCK(SPI_SCK),
+                .SPI_SI(SPI_SI),
+                .SPI_SO(SPI_SO)
                 );
 
 core core(

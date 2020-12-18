@@ -6,6 +6,8 @@ module ascii_to_pixel(
 
 always_comb begin
 
+pixel_row = 0;
+
   case(ascii)
 
   8'h41: begin                   //A

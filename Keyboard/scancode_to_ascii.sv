@@ -5,6 +5,8 @@ module scancode_to_ascii(
 
 always_comb begin
 
+ascii = 0;
+
   case(scan_code)
 
   8'h1c: ascii = 8'h41;                   //A
