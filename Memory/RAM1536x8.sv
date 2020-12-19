@@ -53,25 +53,24 @@ always_comb begin
   end
 end
 
-always @ (negedge WCLK) begin
+always_comb begin
+
+WE_bank0 = 0;
+WE_bank1 = 0;
+WE_bank2 = 0;
 
   if(WE == 1) begin
     if(WADDR[10:9] == 2'b00) begin      //cte se z bank0
       WE_bank0 = 1;
-      WE_bank1 = 0;
-      WE_bank2 = 0;
     end
     if(WADDR[10:9] == 2'b01) begin      //cte se z bank1
-      WE_bank0 = 0;
       WE_bank1 = 1;
-      WE_bank2 = 0;
     end
     if(WADDR[10:9] == 2'b10) begin      //cte se z bank2
-      WE_bank0 = 0;
-      WE_bank1 = 0;
       WE_bank2 = 1;
     end
   end
+
 end
 
 SB_RAM512x8 ram512X8_inst1 (
