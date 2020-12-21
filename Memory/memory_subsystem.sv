@@ -17,9 +17,13 @@ Mapa pametovych adres:
 Do videopameti zatim lze zapisovat jen po 8 bitech
 */
 module memory(
-    input logic CLK_CPU, mem_en,
+    input logic CLK_CPU, resetn, resetp,
+
+    input logic mem_en,
     input logic [1:0] store_size,
     input logic [31:0] nextPC, mem_addr, write_data,
+    output logic stall,
+    output logic [31:0] instr_fetch, read_data,
 
     //klavesnice
     input logic [7:0] pressed_key,
@@ -28,16 +32,28 @@ module memory(
 
     //videopamet
     output logic video_write_enable,
-    output logic [7:0] video_write_data,
+    output logic [31:0] video_write_data,
     output logic [10:0] video_write_addr,
     //videopamet
 
-    output logic stall,
-    output logic [31:0] instr_fetch, read_data,
-
     //SPI rozhrani
     output logic SPI_CS, SPI_SCK, SPI_SI,
-    input logic SPI_SO
+    input logic SPI_SO,
+
+    /*output flash_io0_oe,
+  	output flash_io1_oe,
+  	output flash_io2_oe,
+  	output flash_io3_oe,
+
+  	output flash_io0_do,
+  	output flash_io1_do,
+  	output flash_io2_do,
+  	output flash_io3_do,
+
+  	input  flash_io0_di,
+  	input  flash_io1_di,
+  	input  flash_io2_di,*/
+  	input logic flash_io3_di
 );
 
   logic dcache_miss, dcache_miss_prev;
@@ -50,12 +66,13 @@ module memory(
   logic [31:0] icache_write_data, icache_read_data;
 
   logic SPI_data_ready;
-  logic [31:0] SPI_data, read_data_mem;
+  logic [31:0] SPI_data, read_data_mem, word_debug;
 
 
 always_comb begin
 
-  video_write_data = write_data[7:0];
+  //video_write_data = write_data[7:0];
+  video_write_data = SPI_data;
   video_write_addr = mem_addr[10:0];
 
 //defaultni hodnoty
@@ -143,6 +160,7 @@ end
 
 spi_controller SPI_Flash(
                         .CLK(CLK_CPU),
+                        .resetn(resetn),
                         .icache_miss(icache_miss),
                         .dcache_miss(dcache_miss),
                         .SPI_data_ready(SPI_data_ready),
@@ -152,10 +170,60 @@ spi_controller SPI_Flash(
                         .SPI_CS(SPI_CS),
                         .SPI_SCK(SPI_SCK),
                         .SPI_SI(SPI_SI),
-                        .SPI_SO(SPI_SO)
+                        .SPI_SO(SPI_SO),
+                        /*.flash_io0_oe(flash_io0_oe),
+                        .flash_io1_oe(flash_io1_oe),
+                        .flash_io2_oe(flash_io2_oe),
+                        .flash_io3_oe(flash_io3_oe),
+
+                        .flash_io0_do(flash_io0_do),
+                        .flash_io1_do(flash_io1_do),
+                        .flash_io2_do(flash_io2_do),
+                        .flash_io3_do(flash_io3_do),
+
+                        .flash_io0_di(flash_io0_di),
+                        .flash_io1_di(flash_io1_di),
+                        .flash_io2_di(flash_io2_di),
+                        .flash_io3_di(flash_io3_di),*/
+                        .word_debug(word_debug)
   );
 
-dcache L1D(
+/*spimemio spi_flash(
+                  .clk(CLK_CPU),
+                  .resetn(resetn),
+                  .valid(1),
+                  .ready(SPI_data_ready),
+                  .addr(24'h050000),
+                  .rdata(SPI_data),
+
+                  .flash_csb(SPI_CS),
+                  .flash_clk(SPI_SCK),
+
+                  .flash_io0_oe(flash_io0_oe),
+                  .flash_io1_oe(flash_io1_oe),
+                  .flash_io2_oe(flash_io2_oe),
+                  .flash_io3_oe(flash_io3_oe),
+
+                  .flash_io0_do(flash_io0_do),
+                  .flash_io1_do(flash_io1_do),
+                  .flash_io2_do(flash_io2_do),
+                  .flash_io3_do(flash_io3_do),
+
+                  .flash_io0_di(flash_io0_di),
+                  .flash_io1_di(flash_io1_di),
+                  .flash_io2_di(flash_io2_di),
+                  .flash_io3_di(flash_io3_di),
+
+                  .cfgreg_we(4'b0000),
+                  .cfgreg_di(0),
+                  .cfgreg_do(),
+
+                  .word_debug(word_debug)
+  );*/
+
+
+
+/*dcache L1D(
           .CLK(CLK_CPU),
           .read_en(dcache_read_en),
           .write_en(dcache_write_en),
@@ -166,7 +234,7 @@ dcache L1D(
           .write_addr(dcache_write_addr),
           .write_data(dcache_write_data),
           .RDATA_OUT(dcache_read_data)
-  );
+  );*/
 
   icache L1I(
             .CLK(CLK_CPU),

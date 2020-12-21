@@ -1,6 +1,6 @@
 module core(
   input logic CLK,										//vstupni CLK
-  input logic reset,
+  input logic resetn,
   input logic stall_mem,								//zastavit zpracovani instrukci, signal z pameti
   input logic [31:0] instr_fetch, mem_read_data, 				//vstupni instrukce + prectena data z pameti
   output logic memory_en,								//vystupni signal memory_en -> pokud je 1, pamet se bude pouzivat
@@ -38,11 +38,13 @@ module core(
 
   mux2 #(32) pcSelect(pcControl, PCplus4, aluRes, nextPC);
 
-  initial PC <= 0;
+  //initial PC <= 0;
 
 always_ff @ (posedge CLK) begin
-  if(!stall_pc)
-    PC <= nextPC;
+  /*if(!stall_pc)
+    PC <= nextPC;*/
+
+    PC = 32'h00000000;
 
 end
   //logika PC
