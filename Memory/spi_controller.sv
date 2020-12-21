@@ -23,7 +23,9 @@ Postup cteni dat z flash pameti:
 
 */
 module spi_controller(
-    input logic CLK, icache_miss, dcache_miss,
+    input logic CLK, resetn,
+
+    input logic icache_miss, dcache_miss,
     output logic SPI_data_ready,
 
     input logic [19:0] dcache_addr, icache_addr,
@@ -31,11 +33,29 @@ module spi_controller(
 
     //SPI rozhrani
     output logic SPI_CS, SPI_SCK, SPI_SI,
-    input logic SPI_SO
+    input logic SPI_SO,
+
+    /*output flash_io0_oe,
+  	output flash_io1_oe,
+  	output flash_io2_oe,
+  	output flash_io3_oe,
+
+  	output flash_io0_do,
+  	output flash_io1_do,
+  	output flash_io2_do,
+  	output flash_io3_do,
+
+  	input  flash_io0_di,
+  	input  flash_io1_di,
+  	input  flash_io2_di,
+  	input  flash_io3_di,*/
     //SPI rozhrani
+
+    output logic [31:0] word_debug      //debug
 );
 
 localparam opcode = 8'h03;					//opcode na cteni dat
+localparam wakeup_op = 8'hAB;					//opcode na cteni dat
 
   logic [2:0] bit_counter;
   logic [1:0] byte_counter;
@@ -45,19 +65,47 @@ localparam opcode = 8'h03;					//opcode na cteni dat
   logic [23:0] flash_addr;
   logic busy;
   logic receiving;
+  logic startup;
 
   assign SPI_SCK = CLK;         //clock pro SPI sbernici
-  assign SPI_CS = busy;         //enable pin pro flash pamet
+  assign SPI_CS = !busy;         //enable pin pro flash pamet
 
+  assign word_debug = {flash_byte, 3'b000, receiving, 3'b000, startup, 3'b000, SPI_CS, 3'b000, SPI_SCK, 3'b000, SPI_SI, 3'b000, SPI_SO};
 
   //SPI_SI bit na vystupu
   decoder_3to8_inv output_select(bit_counter, flash_byte, SPI_SI);
-  shift_reg #(32) SPI_buffer(CLK, receiving, SPI_SO, SPI_data);
+  shift_reg #(32) SPI_buffer(SPI_SCK, receiving, SPI_SO, SPI_data);
 
-always_ff @ (posedge CLK) begin
+
+
+always_ff @ (negedge CLK, negedge resetn) begin
 
   flash_addr [23:20] = 4'b0000;
 
+  if(!resetn) begin
+
+    busy <= 0;
+    startup <= 1;
+
+  end
+  else begin
+
+    if(startup) begin
+
+      if(bit_counter == 3'b111) begin
+
+        busy <= 0;
+        startup <= 0;
+
+      end
+      else busy <= 1;
+
+    end
+
+  end
+
+
+if(resetn & !startup) begin
   if(!busy) begin
 
     if(icache_miss == 1) begin
@@ -76,19 +124,21 @@ always_ff @ (posedge CLK) begin
   end
   else begin
 
-    flash_addr[19:0] <= flash_addr[19:0];
+    //flash_addr[19:0] <= flash_addr[19:0];
 
     if(SPI_data_ready) begin
       busy <= 0;
+      startup <= 0;
     end
     else busy <= 1;
 
   end
 end
+end
 
-always_ff @ (posedge CLK) begin
+always_ff @ (negedge CLK) begin
 
-  if(busy) begin
+  if(busy & !receiving) begin
 
     if(byte_counter != 2'b11) begin
 
@@ -132,10 +182,12 @@ end
 
 always_comb begin
 
-  if(byte_counter == 2'b00) flash_byte = opcode;
+  if(startup) flash_byte = wakeup_op;
+  else if(byte_counter == 2'b00) flash_byte = opcode;
   else if(byte_counter == 2'b01) flash_byte = flash_addr[23:16];
   else if(byte_counter == 2'b10) flash_byte = flash_addr[15:8];
-  else flash_byte = flash_addr[7:0];
+  else if(byte_counter == 2'b11) flash_byte = flash_addr[7:0];
+  else flash_byte = opcode;
 
 end
 
