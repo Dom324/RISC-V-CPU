@@ -56,13 +56,11 @@ module TinyFPGA_BX (
   output USBPU
 );
 
-// deactivate USB
-assign USBPU = 1'b0;
+  logic keyboard_data, keyboard_clock, hsync, vsync, VGA_pixel, CLK_VGA, CLK_CPU;
+  logic [26:0] clk_div;
 
-  logic keyboard_data, keyboard_clock, hsync, vsync, VGA_pixel, CLK_VGA, CLK_CPU, reset;
-  logic [2:0] clk_div;
+  logic resetn, resetp, pll_locked;
 
-  assign reset = PIN_5;
   assign keyboard_data = PIN_12;
   assign keyboard_clock = PIN_13;
   assign PIN_10 = hsync;
@@ -70,37 +68,91 @@ assign USBPU = 1'b0;
   assign PIN_14 = VGA_pixel;
   assign PIN_15 = CLK_VGA;
 
-/*always_ff @ (posedge CLK_16mhz) begin
+  logic flash_io0_oe, flash_io1_oe, flash_io2_oe, flash_io3_oe,
+        flash_io0_do, flash_io1_do, flash_io2_do, flash_io3_do,
+        flash_io0_di, flash_io1_di, flash_io2_di, flash_io3_di;
+
+// deactivate USB
+  assign USBPU = 1'b0;
+
+  logic res0, res1, res2;
+  assign resetn = !resetp;
+  assign resetp = !(res0 & res1 & res2);
+
+always_ff @ (posedge CLK_CPU, negedge pll_locked) begin
+
+  if(!pll_locked) begin
+    res0 <= 0;
+    res1 <= 0;
+    res2 <= 0;
+  end
+  else if(CLK_CPU) begin
+    res0 <= pll_locked;
+    res1 <= res0;
+    res2 <= res1;
+  end
+
+end
+
+always_ff @ (posedge CLK_16mhz) begin
 
   if(CLK_16mhz) clk_div <= clk_div + 1;
 
-  if(clk_div[2]) CLK_CPU <= 1;
+  if(clk_div[4]) CLK_CPU <= 1;
   else CLK_CPU <= 0;
 
-end*/
+end
+
+  /*SB_IO #(
+		.PIN_TYPE(6'b 1010_01),
+		.PULLUP(1'b 0)
+	) flash_io_buf [3:0] (
+		.PACKAGE_PIN({SPI_IO0, SPI_IO1, SPI_IO2, SPI_IO3}),
+		.OUTPUT_ENABLE({flash_io3_oe, flash_io2_oe, flash_io1_oe, flash_io0_oe}),
+		.D_OUT_0({flash_io3_do, flash_io2_do, flash_io1_do, flash_io0_do}),
+		.D_IN_0({flash_io3_di, flash_io2_di, flash_io1_di, flash_io0_di})
+	);*/
 
   //PLL obvod generujici CLK pro VGA obvod, 40MHz
 pll CLK_VGA_PLL(
         .clock_in(CLK_16mhz),
         .clock_out(CLK_VGA),
-        .locked(locked)
+        .locked(pll_locked)
         );
   //PLL obvod generujici CLK pro VGA obvod, 40MHz
 
 
   CPU RISC_V_CPU(
+                .CLK_VGA(CLK_VGA),
+                .CLK_CPU(CLK_CPU),
+                .resetn(resetn),
+                .resetp(resetp),
+
                 .keyboard_data(keyboard_data),
                 .keyboard_clock(keyboard_clock),
-                .CLK_VGA(CLK_VGA),
-                .CLK_CPU(CLK_16mhz),
+
                 .hsync(hsync),
                 .vsync(vsync),
                 .VGA_pixel(VGA_pixel),
-                .reset(reset),
+
                 .SPI_CS(SPI_SS),      //SPI rozhrani
                 .SPI_SCK(SPI_SCK),    //SPI rozhrani
-                .SPI_SI(SPI_IO0),     //SPI rozhrani
-                .SPI_SO(SPI_IO1)      //SPI rozhrani
+                .SPI_SI(SPI_SI),
+                .SPI_SO(SPI_SO)
+                /*.flash_io0_oe(flash_io0_oe),
+                .flash_io1_oe(flash_io1_oe),
+                .flash_io2_oe(flash_io2_oe),
+                .flash_io3_oe(flash_io3_oe),
+
+                .flash_io0_do(flash_io0_do),
+                .flash_io1_do(flash_io1_do),
+                .flash_io2_do(flash_io2_do),
+                .flash_io3_do(flash_io3_do),
+
+                .flash_io0_di(flash_io0_di),
+                .flash_io1_di(flash_io1_di),
+                .flash_io2_di(flash_io2_di),
+                .flash_io3_di(flash_io3_di)*/
                 );
 
 
@@ -112,11 +164,12 @@ pll CLK_VGA_PLL(
   wire [31:0] blink_pattern = 32'b101010001110111011100010101;
 
   // increment the blink_counter every clock
-  always @(posedge CLK_VGA) begin
+  always @(posedge CLK_16mhz) begin
       blink_counter <= blink_counter + 1;
   end
   // light up the LED according to the pattern
-  assign LED = blink_pattern[blink_counter[25:21]];
+  //assign LED = blink_pattern[blink_counter[25:21]];
+  assign LED = CLK_CPU;
 //SOS blikani na signalizaci, ze se kod nahral spravne
 
 
@@ -154,10 +207,10 @@ pll CLK_VGA_PLL(
 // SPI flash interface on bottom of board
   //assign SPI_SS = 1'bz;
   //assign SPI_SCK = 1'bz;
-  //assign SPI_IO0 = 1'bz;
-  //assign SPI_IO1 = 1'bz;
-  assign SPI_IO2 = 1'bz;
-  assign SPI_IO3 = 1'bz;
+  assign SPI_IO0 = SPI_SI;
+  assign SPI_SO = SPI_IO1;
+  //assign SPI_IO2 = 1'bz;
+  //assign SPI_IO3 = 1'bz;
 
 // General purpose pins on bottom of board
   assign PIN_25 = 1'bz;
