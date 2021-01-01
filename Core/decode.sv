@@ -27,7 +27,7 @@ instrType = 3'b000;
     7'b0110111: begin			//U-type instruction
 
 	    rd = instr[11:7];
-      imm = {instr[31:12], 12'b000000000000};
+      imm = {instr[31:12], 12'h000};
       instrType = 3'b001;
 
       rs1 = 5'b00000;
