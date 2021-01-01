@@ -175,8 +175,8 @@ always_ff @ (posedge CLK) begin
   if(receiving == 1) bits_received <= bits_received + 1;
   else bits_received <= 0;
 
-  if(bits_received == 5'b11111) SPI_data_ready = 1;
-  else SPI_data_ready = 0;
+  if(bits_received == 5'b11111) SPI_data_ready <= 1;
+  else SPI_data_ready <= 0;
 
 end
 

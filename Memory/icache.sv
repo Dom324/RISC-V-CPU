@@ -30,6 +30,7 @@ module icache(
     input logic [31:0] write_data,
     output logic cache_miss,
     output logic [31:0] RDATA_OUT
+    //output logic [1:0] debug
 );
 
     logic [19:0] read_addr_old;
@@ -39,12 +40,14 @@ module icache(
     logic [1:0] LRU_A, LRU_B, LRU_C, LRU_D;
     logic [1:0] set_used;           //ktery set byl pouzit, 00 = A, 01 = B, 10 = C, 11 = D
 
-    logic WE_tag, WE_setA, WE_setB, WE_setC, WE_setD;
+    logic WE_tagA, WE_tagB, WE_tagC, WE_tagD, WE_setA, WE_setB, WE_setC, WE_setD;
     logic [15:0] tagA, tagB, tagC, tagD;
     logic [31:0] RDATA_setA, RDATA_setB, RDATA_setC, RDATA_setD;
     logic [31:0] MASK;
 
     logic [1:0] state;
+
+    assign debug = state;
 
 //initial state = 0;
 
@@ -143,30 +146,27 @@ case(state)          // synopsys full_case
 
   2'b10: begin
 
-    if(fetch) begin
+    if(tagA[13] == 0) set_used = 2'b00;
+    else if(tagB[13] == 0) set_used = 2'b01;
+    else if(tagC[13] == 0) set_used = 2'b10;
+    else if(tagD[13] == 0) set_used = 2'b11;
 
-      cache_miss = 0;
-      RDATA_OUT = 0;
+    else begin
 
-      if(tagA[13] == 0) set_used = 2'b00;
-      else if(tagB[13] == 0) set_used = 2'b01;
-      else if(tagC[13] == 0) set_used = 2'b10;
-      else if(tagD[13] == 0) set_used = 2'b11;
-
-      else begin
-
-        if((LRU_A <= LRU_B) & (LRU_A <= LRU_C) & (LRU_A <= LRU_D))
-          set_used = 2'b00;
-        else if((LRU_B <= LRU_C) & (LRU_B <= LRU_D))
-          set_used = 2'b01;
-        else if(LRU_C <= LRU_D)
-          set_used = 2'b10;
-        else
-          set_used = 2'b11;
+      if((LRU_A <= LRU_B) & (LRU_A <= LRU_C) & (LRU_A <= LRU_D))
+        set_used = 2'b00;
+      else if((LRU_B <= LRU_C) & (LRU_B <= LRU_D))
+        set_used = 2'b01;
+      else if(LRU_C <= LRU_D)
+        set_used = 2'b10;
+      else
+        set_used = 2'b11;
 
       end
-    end
+
+    if(fetch) cache_miss = 0;
     else cache_miss = 1;
+
   end
 
   /*default: begin
@@ -179,7 +179,6 @@ case(state)          // synopsys full_case
 endcase
 
 end
-
 
 
 always_comb begin
@@ -196,7 +195,11 @@ always_comb begin
 
 //defaultni hodnoty
   MASK = 32'hffffffff;
-  WE_tag = 0;
+  WE_tagA = 0;
+  WE_tagB = 0;
+  WE_tagC = 0;
+  WE_tagD = 0;
+
   WE_setA = 0;
   WE_setB = 0;
   WE_setC = 0;
@@ -222,7 +225,11 @@ always_comb begin
   if((state == 2'b01) && (cache_miss == 0)) begin
 
     MASK = 32'hffffffff;
-    WE_tag = 1;
+    WE_tagA = 1;
+    WE_tagB = 1;
+    WE_tagC = 1;
+    WE_tagD = 1;
+
     WE_setA = 0;
     WE_setB = 0;
     WE_setC = 0;
@@ -245,7 +252,10 @@ always_comb begin
   else if((state == 2'b10) && (fetch == 1)) begin
 
     MASK = 32'h00000000;
-    WE_tag = 1;
+    WE_tagA = 1;
+    WE_tagB = 1;
+    WE_tagC = 1;
+    WE_tagD = 1;
 
     case(set_used)       // synopsys full_case
       2'b00: WE_setA = 1;
@@ -283,7 +293,10 @@ always_comb begin
   if( ((state == 2'b01) && (cache_miss == 0)) || ((state == 2'b10) && (fetch == 1)) ) begin
 
     MASK = 32'h00000000;
-    WE_tag = 1;
+    WE_tagA = 1;
+    WE_tagB = 1;
+    WE_tagC = 1;
+    WE_tagD = 1;
 
     case(set_used)          // synopsys full_case //aktualizace LRU bitu
       2'b00: begin
@@ -366,8 +379,8 @@ RAM256x16 icache_tagA(.RCLK_c(CLK),
                       .RCLKE_c(read_en),
                       .RE_c(read_en),
                       .WCLK_c(CLK),
-                      .WCLKE_c(WE_tag),
-                      .WE_c(WE_tag),
+                      .WCLKE_c(WE_tagA),
+                      .WE_c(WE_tagA),
                       .RADDR_c(RADDR_TAG),
                       .WADDR_c(RADDR_TAG),
                       .MASK_IN(0),
@@ -392,8 +405,8 @@ RAM256x16 icache_tagB(.RCLK_c(CLK),
                       .RCLKE_c(read_en),
                       .RE_c(read_en),
                       .WCLK_c(CLK),
-                      .WCLKE_c(WE_tag),
-                      .WE_c(WE_tag),
+                      .WCLKE_c(WE_tagB),
+                      .WE_c(WE_tagB),
                       .RADDR_c(RADDR_TAG),
                       .WADDR_c(RADDR_TAG),
                       .MASK_IN(0),
@@ -418,8 +431,8 @@ RAM256x16 icache_tagC(.RCLK_c(CLK),
                       .RCLKE_c(read_en),
                       .RE_c(read_en),
                       .WCLK_c(CLK),
-                      .WCLKE_c(WE_tag),
-                      .WE_c(WE_tag),
+                      .WCLKE_c(WE_tagC),
+                      .WE_c(WE_tagC),
                       .RADDR_c(RADDR_TAG),
                       .WADDR_c(RADDR_TAG),
                       .MASK_IN(0),
@@ -444,8 +457,8 @@ RAM256x16 icache_tagD(.RCLK_c(CLK),
                       .RCLKE_c(read_en),
                       .RE_c(read_en),
                       .WCLK_c(CLK),
-                      .WCLKE_c(WE_tag),
-                      .WE_c(WE_tag),
+                      .WCLKE_c(WE_tagD),
+                      .WE_c(WE_tagD),
                       .RADDR_c(RADDR_TAG),
                       .WADDR_c(RADDR_TAG),
                       .MASK_IN(0),
