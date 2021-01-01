@@ -68,9 +68,9 @@ module TinyFPGA_BX (
   assign PIN_14 = VGA_pixel;
   assign PIN_15 = CLK_VGA;
 
-  logic flash_io0_oe, flash_io1_oe, flash_io2_oe, flash_io3_oe,
+  /*logic flash_io0_oe, flash_io1_oe, flash_io2_oe, flash_io3_oe,
         flash_io0_do, flash_io1_do, flash_io2_do, flash_io3_do,
-        flash_io0_di, flash_io1_di, flash_io2_di, flash_io3_di;
+        flash_io0_di, flash_io1_di, flash_io2_di, flash_io3_di;*/
 
 // deactivate USB
   assign USBPU = 1'b0;
