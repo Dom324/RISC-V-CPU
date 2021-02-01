@@ -1,6 +1,6 @@
 module decode(
   input logic  [31:0] instr,
-  output logic [2:0] funct3,
+  output logic [2:0] funct3, aluOp,
   output logic [6:0] funct7,
   output logic [6:0] op,
   output logic [4:0] rd, rs1, rs2,
@@ -20,11 +20,12 @@ funct3 = 0;
 funct7 = 0;
 imm = 0;
 instrType = 3'b000;
+aluOp = funct3;
 //defaultni hodnoty
 
   case(instr[6:0])            // synopsys parallel_case
 
-    7'b0110111: begin			//U-type instruction
+    7'b0110111, 7'b0010111: begin			//U-type instruction
 
 	    rd = instr[11:7];
       imm = {instr[31:12], 12'h000};
@@ -79,6 +80,7 @@ instrType = 3'b000;
       funct3 = instr[14:12];
       imm = { {21{instr[31]}}, instr[30:25], instr[11:7] };
 	    instrType = 3'b101;
+      aluOp = 3'b000;
 
       rd = 5'b00000;
 	    funct7 = 7'b0000000;
