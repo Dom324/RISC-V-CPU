@@ -56,12 +56,14 @@ module spi_controller(
 
 localparam opcode = 8'h03;					//opcode na cteni dat
 localparam wakeup_op = 8'hAB;					//opcode na cteni dat
+localparam invert_endianess = 0;					//opcode na cteni dat
 
   logic [2:0] bit_counter;
   logic [1:0] byte_counter;
   logic [4:0] bits_received;
   logic [7:0] flash_byte;
 
+  logic [31:0] SPI_data_buffer;
   logic [23:0] flash_addr;
   logic busy;
   logic receiving;
@@ -74,8 +76,16 @@ localparam wakeup_op = 8'hAB;					//opcode na cteni dat
 
   //SPI_SI bit na vystupu
   decoder_3to8_inv output_select(bit_counter, flash_byte, SPI_SI);
-  shift_reg #(32) SPI_buffer(SPI_SCK, receiving, SPI_SO, SPI_data);
+  shift_reg #(32) SPI_buffer(SPI_SCK, receiving, SPI_SO, SPI_data_buffer);
 
+always_comb begin
+
+  if(invert_endianess)
+    SPI_data = {SPI_data_buffer[7:0], SPI_data_buffer[15:8], SPI_data_buffer[23:16], SPI_data_buffer[31:24]};
+  else
+    SPI_data = SPI_data_buffer;
+    
+end
 
 
 always_ff @ (negedge CLK, negedge resetn) begin
@@ -168,6 +178,13 @@ end
 
 always_ff @ (posedge CLK) begin
 
+  if(!resetn) begin
+
+    receiving <= 0;
+
+  end
+  else begin
+
   if( (byte_counter == 2'b11) && (bit_counter == 3'b111) ) receiving <= 1;
   else if(bits_received == 5'b11111) receiving <= 0;
   else receiving <= receiving;
@@ -177,6 +194,8 @@ always_ff @ (posedge CLK) begin
 
   if(bits_received == 5'b11111) SPI_data_ready <= 1;
   else SPI_data_ready <= 0;
+
+  end
 
 end
 
