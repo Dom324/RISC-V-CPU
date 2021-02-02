@@ -25,10 +25,10 @@
 
 */
 module icache(
-    input logic CLK, read_en, fetch,
+    input logic CLK, read_en, fetch, resetn,
     input logic [19:0] read_addr,
     input logic [31:0] write_data,
-    output logic cache_miss,
+    output logic cache_miss, fetch_valid,
     output logic [31:0] RDATA_OUT
     //output logic [1:0] debug
 );
@@ -49,14 +49,15 @@ module icache(
 
     assign debug = state;
 
-//initial state = 0;
 
 //logika pro meneni stavu cache
 always_ff @ (posedge CLK) begin
 
-
   if(!cache_miss)
     read_addr_old <= read_addr;
+
+if(!resetn) state <= 0;
+else begin
 
   case(state)        // synopsys full_case parallel_case
 
@@ -83,13 +84,17 @@ always_ff @ (posedge CLK) begin
     end
 
     2'b10: begin                    //stav == 2, do cache se zapisuje
-      if(fetch) state <= 0;
+      if(fetch) begin
+        if(read_en == 1) state <= 1;
+        else state <= 0;
+      end
       else state <= 2;
     end
 
     //2'b11: state <= 0;              //stav == 3, nelegalni stav
 
   endcase
+end
 end
 
 
@@ -102,13 +107,16 @@ always_comb begin
 //defaultni hodnoty
   cache_miss = 0;
   RDATA_OUT = 0;              //dont care
+  fetch_valid = 0;
   set_used = 2'b00;           //dont care
 //defaultni hodnoty
 
 case(state)          // synopsys full_case
   2'b00: begin
+
     cache_miss = 0;
     RDATA_OUT = 0;              //dont care
+    fetch_valid = 0;
     set_used = 2'b00;           //dont care
 
   end
@@ -118,24 +126,28 @@ case(state)          // synopsys full_case
     //cteme data
     if( (tagA[9:0] == read_addr_old[19:10]) & (tagA[13] == 1) ) begin
       RDATA_OUT = RDATA_setA;
+      fetch_valid = 1;
       set_used = 2'b00;
       cache_miss = 0;
     end
 
     else if( (tagB[9:0] == read_addr_old[19:10]) & (tagB[13] == 1) ) begin
         RDATA_OUT = RDATA_setB;
+        fetch_valid = 1;
         set_used = 2'b01;
         cache_miss = 0;
     end
 
     else if( (tagC[9:0] == read_addr_old[19:10]) & (tagC[13] == 1) ) begin
         RDATA_OUT = RDATA_setC;
+        fetch_valid = 1;
         set_used = 2'b10;
         cache_miss = 0;
     end
 
     else if( (tagD[9:0] == read_addr_old[19:10]) & (tagD[13] == 1) ) begin
         RDATA_OUT = RDATA_setD;
+        fetch_valid = 1;
         set_used = 2'b11;
         cache_miss = 0;
     end
@@ -164,8 +176,16 @@ case(state)          // synopsys full_case
 
       end
 
-    if(fetch) cache_miss = 0;
-    else cache_miss = 1;
+    RDATA_OUT = write_data;
+
+    if(fetch) begin
+      cache_miss = 0;
+      fetch_valid = 1;
+    end
+    else begin
+      cache_miss = 1;
+      fetch_valid = 0;
+    end
 
   end
 
@@ -369,7 +389,7 @@ RAM256x32 icache_setA(.RCLK_c(CLK),
                       .WCLKE_c(WE_setA),
                       .WE_c(WE_setA),
                       .RADDR_c(RADDR_CACHE),
-                      .WADDR_c(RADDR_CACHE),
+                      .WADDR_c(read_addr_old[9:2]),
                       .MASK_IN(0),
                       .WDATA_IN(write_data),
                       .RDATA_OUT(RDATA_setA)
@@ -382,7 +402,7 @@ RAM256x16 icache_tagA(.RCLK_c(CLK),
                       .WCLKE_c(WE_tagA),
                       .WE_c(WE_tagA),
                       .RADDR_c(RADDR_TAG),
-                      .WADDR_c(RADDR_TAG),
+                      .WADDR_c(read_addr_old[9:2]),
                       .MASK_IN(0),
                       .WDATA_IN(tagA_NEW),
                       .RDATA_OUT(tagA)
@@ -395,7 +415,7 @@ RAM256x32 icache_setB(.RCLK_c(CLK),
                       .WCLKE_c(WE_setB),
                       .WE_c(WE_setB),
                       .RADDR_c(RADDR_CACHE),
-                      .WADDR_c(RADDR_CACHE),
+                      .WADDR_c(read_addr_old[9:2]),
                       .MASK_IN(0),
                       .WDATA_IN(write_data),
                       .RDATA_OUT(RDATA_setB)
@@ -408,7 +428,7 @@ RAM256x16 icache_tagB(.RCLK_c(CLK),
                       .WCLKE_c(WE_tagB),
                       .WE_c(WE_tagB),
                       .RADDR_c(RADDR_TAG),
-                      .WADDR_c(RADDR_TAG),
+                      .WADDR_c(read_addr_old[9:2]),
                       .MASK_IN(0),
                       .WDATA_IN(tagB_NEW),
                       .RDATA_OUT(tagB)
@@ -421,7 +441,7 @@ RAM256x32 icache_setC(.RCLK_c(CLK),
                       .WCLKE_c(WE_setC),
                       .WE_c(WE_setC),
                       .RADDR_c(RADDR_CACHE),
-                      .WADDR_c(RADDR_CACHE),
+                      .WADDR_c(read_addr_old[9:2]),
                       .MASK_IN(0),
                       .WDATA_IN(write_data),
                       .RDATA_OUT(RDATA_setC)
@@ -434,7 +454,7 @@ RAM256x16 icache_tagC(.RCLK_c(CLK),
                       .WCLKE_c(WE_tagC),
                       .WE_c(WE_tagC),
                       .RADDR_c(RADDR_TAG),
-                      .WADDR_c(RADDR_TAG),
+                      .WADDR_c(read_addr_old[9:2]),
                       .MASK_IN(0),
                       .WDATA_IN(tagC_NEW),
                       .RDATA_OUT(tagC)
@@ -447,7 +467,7 @@ RAM256x32 icache_setD(.RCLK_c(CLK),
                       .WCLKE_c(WE_setD),
                       .WE_c(WE_setD),
                       .RADDR_c(RADDR_CACHE),
-                      .WADDR_c(RADDR_CACHE),
+                      .WADDR_c(read_addr_old[9:2]),
                       .MASK_IN(0),
                       .WDATA_IN(write_data),
                       .RDATA_OUT(RDATA_setD)
@@ -460,7 +480,7 @@ RAM256x16 icache_tagD(.RCLK_c(CLK),
                       .WCLKE_c(WE_tagD),
                       .WE_c(WE_tagD),
                       .RADDR_c(RADDR_TAG),
-                      .WADDR_c(RADDR_TAG),
+                      .WADDR_c(read_addr_old[9:2]),
                       .MASK_IN(0),
                       .WDATA_IN(tagD_NEW),
                       .RDATA_OUT(tagD)

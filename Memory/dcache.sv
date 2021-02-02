@@ -37,11 +37,11 @@
 
 */
 module dcache(
-    input CLK, read_en, write_en, fetch,
+    input CLK, read_en, write_en, fetch, resetn,
     input [19:0] read_addr, write_addr,
-    input [31:0] write_data,
+    input [31:0] write_data_from_cpu, write_data_SPI,
     input [1:0] store_size,
-    output reg cache_miss,
+    output reg cache_miss, RDATA_valid, write_ready,
     output reg [31:0] RDATA_OUT
 );
 
@@ -55,17 +55,19 @@ module dcache(
     reg [1:0] set_used;           //ktery set byl pouzit, 00 = A, 01 = B, 10 = C, 11 = D
     reg WE_tag, WE_setA, WE_setB, WE_setC, WE_setD;
     wire [15:0] tagA, tagB, tagC, tagD;
-    wire [31:0] RDATA_setA, RDATA_setB, RDATA_setC, RDATA_setD;
+    wire [31:0] RDATA_setA, RDATA_setB, RDATA_setC, RDATA_setD, write_data;
 
     logic [1:0] state;
 
-//initial state = 0;
 
 //logika pro meneni stavu cache
 always_ff @ (posedge CLK) begin
 
   if(!cache_miss)
     read_addr_old <= read_addr;
+
+if(!resetn) state <= 0;
+else begin
 
   case(state)      // synopsys full_case parallel_case
 
@@ -77,8 +79,8 @@ always_ff @ (posedge CLK) begin
       else if(write_en) begin
         state <= 2;
       end
+      else state <= 0;
 
-        else state <= 0;
     end
 
     2'b01: begin                    //stav == 1, z pameti cache se cte
@@ -101,13 +103,19 @@ always_ff @ (posedge CLK) begin
 
     2'b10: begin              //stav == 2, do cache se zapisuje
 
-      if(read_en) begin
-        state <= 1;
+      if(!cache_miss) begin
+
+        if(read_en) begin
+          state <= 1;
+        end
+        else if(write_en) begin
+          state <= 2;
+        end
+        else state <= 0;
+
       end
-      else if(write_en) begin
-        state <= 2;
-      end
-      else state <= 0;
+      else
+        state <= 3;
 
     end
 
@@ -118,13 +126,17 @@ always_ff @ (posedge CLK) begin
 
   endcase
 end
+end
 
 always_comb begin
 
 //defaultni hodnoty
 cache_miss = 0;
 RDATA_OUT = 0;      //dont care
+RDATA_valid = 0;
 set_used = 0;       //dont care
+write_ready = 0;
+write_data = write_data_from_cpu;
 //defaultni hodnoty
 
   case(state)      // synopsys full_case parallel_case
@@ -157,59 +169,79 @@ set_used = 0;       //dont care
   case(state)        // synopsys full_case parallel_case
     2'b00: begin
       cache_miss = 0;
+      RDATA_valid = 0;
     end
 
     2'b01: begin
-
 
       //cteme data
       if( (tagA[9:0] == read_addr_old[19:10]) & (tagA[13] == 1) ) begin
         RDATA_OUT = RDATA_setA;
         set_used = 2'b00;
         cache_miss = 0;
+        RDATA_valid = 1;
       end
 
       else if( (tagB[9:0] == read_addr_old[19:10]) & (tagB[13] == 1) ) begin
           RDATA_OUT = RDATA_setB;
           set_used = 2'b01;
           cache_miss = 0;
+          RDATA_valid = 1;
       end
 
       else if( (tagC[9:0] == read_addr_old[19:10]) & (tagC[13] == 1) ) begin
           RDATA_OUT = RDATA_setC;
           set_used = 2'b10;
           cache_miss = 0;
+          RDATA_valid = 1;
       end
 
       else if( (tagD[9:0] == read_addr_old[19:10]) & (tagD[13] == 1) ) begin
           RDATA_OUT = RDATA_setD;
           set_used = 2'b11;
           cache_miss = 0;
+          RDATA_valid = 1;
       end
+      else begin
+        cache_miss = 1;
+        RDATA_valid = 0;
+      end
+
       //konec cteni dat
     end
 
     2'b10: begin             //zapis dat
 
-      cache_miss = 0;
       RDATA_OUT = 0;      //dont care
+      RDATA_valid = 0;
 
       //zapisujeme data
-      if( ((tagA[9:0] == write_addr[19:10]) & (tagA[13] == 1)) || (tagA[13] == 0) )
+      if( ((tagA[9:0] == write_addr[19:10]) & (tagA[13] == 1)) || (tagA[13] == 0) ) begin
         set_used = 2'b00;
-
-      else if( (tagB[9:0] == write_addr[19:10]) & (tagB[13] == 1) || (tagB[13] == 0) )
+        cache_miss = 0;
+        write_ready = 1;
+      end
+      else if( (tagB[9:0] == write_addr[19:10]) & (tagB[13] == 1) || (tagB[13] == 0) ) begin
         set_used = 2'b01;
-
-      else if( (tagC[9:0] == write_addr[19:10]) & (tagC[13] == 1) || (tagC[13] == 0) )
+        cache_miss = 0;
+        write_ready = 1;
+      end
+      else if( (tagC[9:0] == write_addr[19:10]) & (tagC[13] == 1) || (tagC[13] == 0) ) begin
         set_used = 2'b10;
-
-      else if( (tagD[9:0] == write_addr[19:10]) & (tagD[13] == 1) || (tagD[13] == 0) )
+        cache_miss = 0;
+        write_ready = 1;
+      end
+      else if( (tagD[9:0] == write_addr[19:10]) & (tagD[13] == 1) || (tagD[13] == 0) ) begin
         set_used = 2'b11;
-
+        cache_miss = 0;
+        write_ready = 1;
+      end
       else begin
 
-        //miss
+        cache_miss = 1;
+        write_ready = 0;
+
+        /*//miss
         if( (tagA[9:2] != 8'hAF) && ((LRU2_A <= LRU2_B) & (LRU2_A <= LRU2_C) & (LRU2_A <= LRU2_D)) )
           set_used = 2'b00;
 
@@ -222,7 +254,7 @@ set_used = 0;       //dont care
         else if(tagD[9:2] != 8'hAF)
           set_used = 2'b11;
 
-        else set_used = 0;        //dont care
+        else set_used = 0;        //dont care*/
 
       end
       //konec zapisu dat
@@ -230,6 +262,10 @@ set_used = 0;       //dont care
 
 
     2'b11: begin             //fetch read
+
+      write_ready = 0;
+      RDATA_valid = 0;
+      write_data = write_data_SPI;
 
       //fetch dat
       if(fetch) begin
