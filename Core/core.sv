@@ -1,50 +1,105 @@
 module core(
   input logic CLK,										//vstupni CLK
   input logic resetn,
-  input logic stall_mem,								//zastavit zpracovani instrukci, signal z pameti
+  input logic mem_read_data_valid, mem_write_ready,
   input logic [31:0] instr_fetch, mem_read_data, 				//vstupni instrukce + prectena data z pameti
+  input logic fetch_valid,
   output logic memory_en,								//vystupni signal memory_en -> pokud je 1, pamet se bude pouzivat
   output logic [1:0] store_size,						//"00" - zapisuje se 8 bitu, "01" zapisuje se 16 bitu, "10" zapisuje se 32 bitu, "11" z pameti se cte
-  output logic [31:0] nextPC,							//adresa z ktere se bude nacitat pristi instrukce
-  output logic [31:0] mem_write_data, mem_addr			//data na zapsani, adresa kam zapisovat/cist
+  output logic [31:0] PCfetch,							//adresa z ktere se bude nacitat pristi instrukce
+  output logic [31:0] mem_write_data, mem_addr,			//data na zapsani, adresa kam zapisovat/cist
+  output logic [31:0] debug
 );
 
-  logic stall_pc, stall_reg;
-  logic [31:0] PC, PCplus4, wd, rd1, rd2, aluB, imm, memData, aluRes;
-  logic [2:0] funct3;
+  logic stall_pc, stall_reg, stall_mem, fetch_valid_exec, mem_read_data_valid_exec;
+  logic [31:0] instr_fetch_exec, PCmux, PCplus4, wd, rd1, rd2, aluB, aluA, imm, memData, aluRes;
+  logic [31:0] mem_read_data_exec;
+  logic [31:0] nextPC, PC, PC_reg, nextPC_reg;
+  logic [2:0] funct3, aluOp;
   logic [6:0] funct7;
   logic [6:0] op;
   logic [4:0] rd, rs1, rs2;
   logic [2:0] instrType;
-  logic we_reg, we_reg_controller, pcControl, aluBSel;
+  logic we_reg, we_reg_controller, pcControl, aluBsel, aluAsel;
   logic [1:0] wdSel;
 
+  assign debug = {3'b000, stall_pc, instr_fetch[27:0]};
 
+  decode decoder(instr_fetch_exec, funct3, aluOp, funct7, op, rd, rs1, rs2, imm, instrType);
 
-  decode decoder(instr_fetch, funct3, funct7, op, rd, rs1, rs2, imm, instrType);
-
-  controller controller(CLK, op, instrType, funct3, we_reg_controller, pcControl, memory_en, aluBSel, wdSel, store_size, controller_stall);
-
-  mux4 #(32) wdSelect(wdSel, aluRes, memData, PCplus4, imm, wd);
+  controller controller(CLK, op, instrType, funct3, we_reg_controller, pcControl, memory_en,
+  aluBsel, aluAsel, wdSel, store_size, controller_stall, jump, mem_write_ready, mem_read_data_valid);
 
   regfile regfile(CLK, we_reg, wd, rd, rs1, rs2, rd1, rd2);
 
-  mux2 #(32) aluBselect(aluBSel, rd2, imm, aluB);
+always_comb begin
 
-  alu alu(rd1, aluB, funct3, funct7, aluRes);
+  if(!jump) begin
+
+    if(wdSel == 0) wd = aluRes;
+    else if(wdSel == 1) wd = memData;
+    else if(wdSel == 2) wd = PCplus4;
+    else if(wdSel == 3) wd = imm;
+
+  end
+  else wd = PC;
+
+end
+
+always_comb begin
+
+  if(aluBsel) aluB = rd2;
+  else aluB = imm;
+
+  if(aluAsel) aluA = rd1;
+  else aluA = PC;
+
+end
+
+  alu alu(aluA, aluB, aluOp, funct7, aluRes);
 
   //logika PC
   assign PCplus4 = PC + 4;
 
-  mux2 #(32) pcSelect(pcControl, PCplus4, aluRes, nextPC);
+  mux2 #(32) pcSelect(pcControl, PCplus4, aluRes, PCmux);
 
-  //initial PC <= 0;
+  assign PCfetch = nextPC + 16'h1000;
 
 always_ff @ (posedge CLK) begin
-  /*if(!stall_pc)
-    PC <= nextPC;*/
 
-    PC = 32'h00000000;
+    instr_fetch_exec <= instr_fetch;
+    fetch_valid_exec <= fetch_valid;
+
+    mem_read_data_exec <= mem_read_data;
+    mem_read_data_valid_exec <= mem_read_data_valid;
+
+end
+
+always_ff @ (posedge CLK) begin
+
+  if(!resetn) begin
+    PC_reg <= 32'hFFFFFFFC;
+    nextPC_reg <= 32'h0;
+  end
+  else begin
+
+    //if(!stall_pc & (nextPC <= 32'h00000008))
+      //PC <= nextPC;
+
+    PC_reg <= PC;
+    nextPC_reg <= nextPC;
+
+  end
+end
+
+always_comb begin
+
+  if(stall_pc) PC = PC_reg;
+  else PC = nextPC_reg;
+
+  if(stall_pc) nextPC = nextPC_reg;
+  else nextPC = PCmux;
+
 
 end
   //logika PC
@@ -52,18 +107,24 @@ end
   //stall logika
 always_comb begin
 
-  if(stall_mem == 1) begin
-	  stall_pc = 1;
-	  stall_reg = 1;
-	end
-	else if(controller_stall) begin
-    stall_pc = 1;
-	  stall_reg = 1;
+  if(fetch_valid_exec) begin
+
+    if(controller_stall) begin
+      stall_pc = 1;
+      stall_reg = 1;
+    end
+    else begin
+      stall_pc = 0;
+      stall_reg = 0;
+    end
+
   end
   else begin
-    stall_pc = 0;
-	  stall_reg = 0;
-	end
+
+    stall_pc = 1;
+    stall_reg = 1;
+
+  end
 
   if(stall_reg == 1) we_reg = 0;
 	else we_reg = we_reg_controller;
