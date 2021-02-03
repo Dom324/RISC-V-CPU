@@ -55,7 +55,7 @@ module dcache(
     reg [1:0] set_used;           //ktery set byl pouzit, 00 = A, 01 = B, 10 = C, 11 = D
     reg WE_tag, WE_setA, WE_setB, WE_setC, WE_setD;
     wire [15:0] tagA, tagB, tagC, tagD;
-    wire [31:0] RDATA_setA, RDATA_setB, RDATA_setC, RDATA_setD, write_data;
+    logic [31:0] RDATA_setA, RDATA_setB, RDATA_setC, RDATA_setD, write_data;
 
     logic [1:0] state;
 
