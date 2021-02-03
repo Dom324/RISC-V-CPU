@@ -9,24 +9,9 @@ module controller(
          aluAsel,     //prepina jestli aluA vstup je reg (1) nebo pc (0)
   output logic [1:0] wdSelect,	//co za data se bude zapisovat do registru - "00" vysledek z ALU, "01" data z pameti, "10" PCplus4 (pouziva se pro ukladani navratovych adres), "11" imm (konstanta)
 			   store_size,		//kolik Bytu se bude zapisovat do pameti - "00" jeden Byte, "01" dva Byty, "10" ctyri Byty, "11" instrukce nezapisuje data ale cte je (LOAD instrukce)
-  output logic stall, jump
-
+  output logic stall, jump,
+  input logic mem_write_ready, mem_read_data_valid
 );
-
-  logic read_state;
-
-always_ff @ (posedge CLK) begin
-
-  if(funct3 == 3'b100) begin
-    if(op == 7'b0000011) begin	//Load instruction
-
-      if(read_state) read_state <= 0;
-      else read_state <= 1;
-
-    end
-  end
-
-end
 
 always_comb begin
 
@@ -106,20 +91,13 @@ jump = 0;
 
       else if(op == 7'b0000011) begin	//Load instruction
 
-          pcControl = 0;
+          if(mem_read_data_valid) stall = 0;
+          else stall = 1;
 
-          if(read_state == 0) begin
-            wdSelect = 2'b00;         //dont care
-            memory_en = 1'b1;
-            we_reg = 0;
-            stall = 1;
-          end
-          else begin
-            wdSelect = 2'b01;
-            memory_en = 1'b0;
-            we_reg = 1;
-            stall = 0;
-          end
+          pcControl = 0;
+          wdSelect = 2'b01;
+          memory_en = 1'b1;
+          we_reg = 1;
 
       end
       else if(op == 7'b0010011) begin					//ADDI, XORI.... instructions
@@ -137,6 +115,9 @@ jump = 0;
 	    wdSelect = 2'bxx;
 	    aluBsel = 1'b0;
 	    memory_en = 1'b1;
+
+      if(mem_write_ready) stall = 0;
+      else stall = 1;
 
 	    case(funct3)
 	      3'b000: store_size = 2'b00;
