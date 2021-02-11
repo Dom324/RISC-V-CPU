@@ -45,7 +45,7 @@ module icache(
     logic [31:0] RDATA_setA, RDATA_setB, RDATA_setC, RDATA_setD;
     logic [31:0] MASK;
 
-    logic [1:0] state;
+    logic [1:0] state, nextState;
 
     assign debug = state;
 
@@ -56,39 +56,59 @@ always_ff @ (posedge CLK) begin
   if(!cache_miss)
     read_addr_old <= read_addr;
 
-if(!resetn) state <= 0;
-else begin
+  if(!resetn) begin
+    state <= 0;
+  end else begin
+    state <= nextState;
+  end
+
+end
+
+//logika pro meneni stavu cache
+always_comb begin
+
+nextState = 0;
 
   case(state)        // synopsys full_case parallel_case
 
     2'b00: begin                    //stav == 0, cache je neaktivni
       if(read_en == 1) begin
-        state <= 1;
+        nextState = 1;
       end
-      else state <= 0;
+      else nextState = 0;
 
     end
 
     2'b01: begin                    //stav == 1, z pameti cache se cte
-      if(!cache_miss) begin
+      if(read_en == 1) begin
+        if(!cache_miss) begin
 
-        if(read_en) begin
-          state <= 1;
+          if(read_en) begin
+            nextState = 1;
+          end
+          else nextState = 0;
+
         end
-        else state <= 0;
-
+        else begin
+          nextState = 2;
+        end
       end
-      else begin
-        state <= 2;
-      end
+      else nextState = 0;
     end
 
     2'b10: begin                    //stav == 2, do cache se zapisuje
       if(fetch) begin
-        if(read_en == 1) state <= 1;
-        else state <= 0;
+
+        if(read_en) nextState = 1;
+        else nextState = 0;
+
       end
-      else state <= 2;
+      else begin
+
+        if(read_en) nextState = 2;
+        else nextState = 0;
+
+      end
     end
 
     //2'b11: state <= 0;              //stav == 3, nelegalni stav
@@ -96,7 +116,6 @@ else begin
   endcase
 end
 end
-
 
 
 always_comb begin
