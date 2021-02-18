@@ -51,13 +51,14 @@ module TinyFPGA_BX (
   inout LED,
 
 // USB
-  inout USBP,
-  inout USBN,
+  /*inout USBP,
+  inout USBN,*/
   output USBPU
 );
 
   logic keyboard_data, keyboard_clock, hsync, vsync, VGA_pixel, CLK_VGA, CLK_CPU;
   logic [26:0] clk_div;
+  logic SPI_CS, SPI_CLK;
 
   logic resetn, resetp, pll_locked;
 
@@ -94,14 +95,16 @@ always_ff @ (posedge CLK_CPU, negedge pll_locked) begin
 
 end
 
-always_ff @ (posedge CLK_16mhz) begin
+/*always_ff @ (posedge CLK_16mhz) begin
 
   if(CLK_16mhz) clk_div <= clk_div + 1;
 
-  if(clk_div[4]) CLK_CPU <= 1;
+  if(clk_div[1]) CLK_CPU <= 1;
   else CLK_CPU <= 0;
 
-end
+end*/
+
+  assign CLK_CPU = CLK_16mhz;
 
   /*SB_IO #(
 		.PIN_TYPE(6'b 1010_01),
@@ -121,6 +124,7 @@ pll CLK_VGA_PLL(
         );
   //PLL obvod generujici CLK pro VGA obvod, 40MHz
 
+//AT25SF081 flash(SPI_SCK, SPI_SS, SPI_SI, SPI_IO3, SPI_IO2, SPI_SO);
 
   CPU RISC_V_CPU(
                 .CLK_VGA(CLK_VGA),
@@ -135,8 +139,8 @@ pll CLK_VGA_PLL(
                 .vsync(vsync),
                 .VGA_pixel(VGA_pixel),
 
-                .SPI_CS(SPI_SS),      //SPI rozhrani
-                .SPI_SCK(SPI_SCK),    //SPI rozhrani
+                .SPI_CS(SPI_CS),      //SPI rozhrani
+                .SPI_SCK(SPI_CLK),    //SPI rozhrani
                 .SPI_SI(SPI_SI),
                 .SPI_SO(SPI_SO)
                 /*.flash_io0_oe(flash_io0_oe),
@@ -158,15 +162,11 @@ pll CLK_VGA_PLL(
 
 //SOS blikani na signalizaci, ze se kod nahral spravne
   // keep track of time and location in blink_pattern
-  reg [25:0] blink_counter;
 
   // pattern that will be flashed over the LED over time
   wire [31:0] blink_pattern = 32'b101010001110111011100010101;
 
   // increment the blink_counter every clock
-  always @(posedge CLK_16mhz) begin
-      blink_counter <= blink_counter + 1;
-  end
   // light up the LED according to the pattern
   //assign LED = blink_pattern[blink_counter[25:21]];
   assign LED = CLK_CPU;
@@ -205,12 +205,12 @@ pll CLK_VGA_PLL(
   assign PIN_24 = 1'bz;
 
 // SPI flash interface on bottom of board
-  //assign SPI_SS = 1'bz;
-  //assign SPI_SCK = 1'bz;
+  assign SPI_SS = SPI_CS;
+  assign SPI_SCK = SPI_CLK;
   assign SPI_IO0 = SPI_SI;
   assign SPI_SO = SPI_IO1;
-  //assign SPI_IO2 = 1'bz;
-  //assign SPI_IO3 = 1'bz;
+  assign SPI_IO2 = 1'b1;
+  assign SPI_IO3 = 1'b1;
 
 // General purpose pins on bottom of board
   assign PIN_25 = 1'bz;
