@@ -51,7 +51,7 @@ module ps2_interface2(
 	reg [7:0]DOWNCOUNTER = 0;		//This is used together with TRIGGER - look the code
 
 	//Set initial values
-	initial begin
+	/*initial begin
 		PREVIOUS_STATE = 1;
 		scan_err = 0;
 		scan_code = 0;
@@ -60,7 +60,7 @@ module ps2_interface2(
 		LED = 0;
 		read = 0;
 		count_reading = 0;
-	end
+	end*/
 
 	always @(posedge CLK) begin				//This reduces the frequency 250 times
 		if (DOWNCOUNTER < 249) begin			//and uses variable TRIGGER as the new board clock
