@@ -81,6 +81,7 @@ nextState = 0;
 
     2'b01: begin                    //stav == 1, z pameti cache se cte
       if(read_en == 1) begin
+
         if(!cache_miss) begin
 
           if(read_en) begin
@@ -89,9 +90,8 @@ nextState = 0;
           else nextState = 0;
 
         end
-        else begin
-          nextState = 2;
-        end
+        else nextState = 2;
+
       end
       else nextState = 0;
     end
@@ -114,14 +114,30 @@ nextState = 0;
     //2'b11: state <= 0;              //stav == 3, nelegalni stav
 
   endcase
-end
+
 end
 
 
 always_comb begin
 
-  RADDR_TAG = read_addr[9:2];    //read
-  RADDR_CACHE = read_addr[9:2];    //read
+  //RADDR_TAG = read_addr[9:2];    //read
+  //RADDR_CACHE = read_addr[9:2];    //read
+
+  case(state)      // synopsys full_case parallel_case
+    2'b00: RADDR_TAG = read_addr[9:2];                  //dont care
+    2'b01: RADDR_TAG = read_addr_old[9:2];     //read
+    2'b10: RADDR_TAG = read_addr_old[9:2];    //write
+    2'b11: RADDR_TAG = read_addr_old[9:2];     //fetch read
+    //default: RADDR_TAG = 0;                 //dont care
+  endcase
+
+  case(state)      // synopsys full_case parallel_case
+    2'b00: RADDR_CACHE = read_addr[9:2];                  //dont care
+    2'b01: RADDR_CACHE = read_addr_old[9:2];     //read
+    2'b10: RADDR_CACHE = read_addr_old[9:2];    //write
+    2'b11: RADDR_CACHE = read_addr_old[9:2];     //fetch read
+    //default: RADDR_TAG = 0;                 //dont care
+  endcase
 
 //defaultni hodnoty
   cache_miss = 0;
