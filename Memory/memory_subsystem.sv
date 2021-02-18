@@ -19,7 +19,7 @@ Do videopameti zatim lze zapisovat jen po 8 bitech
 module memory(
     input logic CLK_CPU, resetn, resetp,
 
-    input logic mem_en,
+    input logic mem_en, fetch_enable,
     input logic [1:0] store_size,
     input logic [31:0] nextPC, mem_addr, write_data,
     output logic fetch_valid, dcache_read_data_valid, dcache_write_ready,
@@ -63,10 +63,12 @@ module memory(
 
   logic icache_miss;
   logic icache_fetch;
-  logic [31:0] icache_write_data, icache_read_data;
+  logic [31:0] icache_read_data;
 
   logic SPI_data_ready;
   logic [31:0] SPI_data, read_data_mem, word_debug;
+
+  logic [1:0] d_i_mode;
 
   //logic [1:0] icache_debug;
   //assign dcache_miss = 0;
@@ -107,18 +109,29 @@ dcache_write_en = 0;
         end
 
       endcase
+
     end
+    else if( (mem_addr[31:12] == 20'hF0000) && (store_size == 2'b00)) begin       //zapisuje se do videopameti
 
-
-    if( (mem_addr[31:12] == 20'hF0000) && (store_size == 2'b00)) begin       //zapisuje se do videopameti
         video_write_enable = 1;
+
     end
+    else if( (mem_addr == 32'hFFFFFFFF) && (store_size == 2'b11)) begin
 
-
-    if( (mem_addr == 32'hFFFFFFFF) && (store_size == 2'b11)) begin
       clean_key_buffer = 1;
       read_data_mem = {{24{1'b0}}, pressed_key [7:0]};
+
     end
+    else begin
+
+      video_write_enable = 0;
+      clean_key_buffer = 0;
+      read_data_mem = 0;
+      dcache_read_en = 0;
+      dcache_write_en = 0;
+
+    end
+
 
   end
 end
@@ -135,9 +148,9 @@ read_data = read_data_mem;
   dcache_read_addr = mem_addr;
 
 //icache cache miss
-  icache_fetch = SPI_data_ready;
+  icache_fetch = SPI_data_ready & d_i_mode[1];
 //dcache cache miss
-  dcache_fetch = SPI_data_ready;
+  dcache_fetch = SPI_data_ready & d_i_mode[0];
 
   /*if(icache_miss_prev) instr_fetch = SPI_data;
   else if(dcache_miss_prev) begin
@@ -153,6 +166,7 @@ spi_controller SPI_Flash(
                         .resetn(resetn),
                         .icache_miss(icache_miss),
                         .dcache_miss(dcache_miss),
+                        .mode(d_i_mode),
                         .SPI_data_ready(SPI_data_ready),
                         .dcache_addr(mem_addr[19:0]),
                         .icache_addr(nextPC[19:0]),
@@ -188,11 +202,12 @@ dcache L1D(
           .fetch(dcache_fetch),
           .cache_miss(dcache_miss),
           .store_size(store_size),
-          .read_addr(dcache_read_addr),
+
+          .mem_addr(dcache_read_addr),
+
           .RDATA_OUT(dcache_read_data),
           .RDATA_valid(dcache_read_data_valid),
 
-          .write_addr(dcache_write_addr),
           .write_data_from_cpu(dcache_write_data),
           .write_data_SPI(SPI_data),
           .write_ready(dcache_write_ready)
@@ -202,7 +217,7 @@ dcache L1D(
             .fetch_valid(fetch_valid),
             .resetn(resetn),
             .CLK(CLK_CPU),
-            .read_en(1),
+            .read_en(fetch_enable),
             .fetch(icache_fetch),
             .cache_miss(icache_miss),
             .read_addr(nextPC[19:0]),
