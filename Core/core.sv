@@ -4,17 +4,19 @@ module core(
   input logic mem_read_data_valid, mem_write_ready,
   input logic [31:0] instr_fetch, mem_read_data, 				//vstupni instrukce + prectena data z pameti
   input logic fetch_valid,
-  output logic memory_en,								//vystupni signal memory_en -> pokud je 1, pamet se bude pouzivat
+  output logic memory_en_out,								//vystupni signal memory_en -> pokud je 1, pamet se bude pouzivat
   output logic [1:0] store_size,						//"00" - zapisuje se 8 bitu, "01" zapisuje se 16 bitu, "10" zapisuje se 32 bitu, "11" z pameti se cte
   output logic [31:0] PCfetch,							//adresa z ktere se bude nacitat pristi instrukce
   output logic [31:0] mem_write_data, mem_addr,			//data na zapsani, adresa kam zapisovat/cist
-  output logic [31:0] debug
+  //output logic [31:0] debug,
+  output logic fetch_enable
 );
 
-  logic stall_pc, stall_reg, stall_mem, fetch_valid_exec, mem_read_data_valid_exec;
-  logic [31:0] instr_fetch_exec, PCmux, PCplus4, wd, rd1, rd2, aluB, aluA, imm, memData, aluRes;
-  logic [31:0] mem_read_data_exec;
-  logic [31:0] nextPC, PC, PC_reg, nextPC_reg;
+  logic stall_pc, memory_en, fetch_valid_exec;
+  logic [31:0] instr_fetch_exec;
+
+  logic [31:0] PCmux, PCplus4, wd, rd1, rd2, aluB, aluA, imm, memData, aluRes;
+  logic [31:0] nextPC, PC;
   logic [2:0] funct3, aluOp;
   logic [6:0] funct7;
   logic [6:0] op;
@@ -23,7 +25,9 @@ module core(
   logic we_reg, we_reg_controller, pcControl, aluBsel, aluAsel;
   logic [1:0] wdSel;
 
-  assign debug = {3'b000, stall_pc, instr_fetch[27:0]};
+  //assign debug = {3'b000, stall_pc, instr_fetch[27:0]};
+
+  assign memory_en_out = memory_en & fetch_valid_exec;
 
   decode decoder(instr_fetch_exec, funct3, aluOp, funct7, op, rd, rs1, rs2, imm, instrType);
 
@@ -31,6 +35,23 @@ module core(
   aluBsel, aluAsel, wdSel, store_size, controller_stall, jump, mem_write_ready, mem_read_data_valid);
 
   regfile regfile(CLK, we_reg, wd, rd, rs1, rs2, rd1, rd2);
+
+  main_controller main_controller(
+    .CLK,
+    .resetn,
+    .controller_stall,
+    .we_reg_controller,
+    .fetch_valid,
+    .PCmux,
+    .instr_fetch,
+    .PC,
+    .nextPC,
+    .instr_fetch_exec,
+    .fetch_enable,
+    .stall_pc,
+    .we_reg,
+    .fetch_valid_exec
+    );
 
 always_comb begin
 
@@ -63,74 +84,9 @@ end
 
   mux2 #(32) pcSelect(pcControl, PCplus4, aluRes, PCmux);
 
-  assign PCfetch = nextPC + 16'h1000;
+  //assign PCfetch = nextPC + 16'h1000;
+  assign PCfetch = nextPC;
 
-always_ff @ (posedge CLK) begin
-
-    instr_fetch_exec <= instr_fetch;
-    fetch_valid_exec <= fetch_valid;
-
-    mem_read_data_exec <= mem_read_data;
-    mem_read_data_valid_exec <= mem_read_data_valid;
-
-end
-
-always_ff @ (posedge CLK) begin
-
-  if(!resetn) begin
-    PC_reg <= 32'hFFFFFFFC;
-    nextPC_reg <= 32'h0;
-  end
-  else begin
-
-    //if(!stall_pc & (nextPC <= 32'h00000008))
-      //PC <= nextPC;
-
-    PC_reg <= PC;
-    nextPC_reg <= nextPC;
-
-  end
-end
-
-always_comb begin
-
-  if(stall_pc) PC = PC_reg;
-  else PC = nextPC_reg;
-
-  if(stall_pc) nextPC = nextPC_reg;
-  else nextPC = PCmux;
-
-
-end
-  //logika PC
-
-  //stall logika
-always_comb begin
-
-  if(fetch_valid_exec) begin
-
-    if(controller_stall) begin
-      stall_pc = 1;
-      stall_reg = 1;
-    end
-    else begin
-      stall_pc = 0;
-      stall_reg = 0;
-    end
-
-  end
-  else begin
-
-    stall_pc = 1;
-    stall_reg = 1;
-
-  end
-
-  if(stall_reg == 1) we_reg = 0;
-	else we_reg = we_reg_controller;
-
-end
-  //stall logika
 
 //load store unit
   assign mem_addr = aluRes;
@@ -144,18 +100,18 @@ mem_write_data = 0;
 
   if(funct7 == 7'b0000011) begin			//jedna se o LOAD instrukci, nacitaji se data z pameti
 
-    case(funct3)       // synopsys full_case
+    case(funct3)
 
 		  3'b000: memData = {{24{mem_read_data[7]}}, mem_read_data[7:0]};				//instrukce LB, z pameti se nacita jeden Byte, dela se sign extension
 		  3'b001: memData = {{16{mem_read_data[7]}}, mem_read_data[15:0]};			//instrukce LH, z pameti se nacitaji dva Byty, dela se sign extension
 		  3'b010: memData = mem_read_data;											                //instrukce LW, z pameti se nacita ctyri Byty
 		  3'b100: memData = {{24{1'b0}}, mem_read_data[7:0]};						     	  //instrukce LBU, z pameti se nacita jeden Byte, nedela se sign extension
 		  3'b101: memData = {{16{1'b0}}, mem_read_data[15:0]};						      //instrukce LHU, z pameti se nacitaji dva Byty, nedela se sign extension
-		//default: memData = 0;
+		  default: memData = 0;
 	  endcase
 	end
 
-	if(op == 7'b0100011) begin			//jedna se o STORE instrukci, do pameti se ukladaji data
+  if(op == 7'b0100011) begin			//jedna se o STORE instrukci, do pameti se ukladaji data
 
     case(funct3)      // synopsys full_case
 
