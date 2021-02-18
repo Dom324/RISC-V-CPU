@@ -92,15 +92,15 @@ always_comb begin
 
   //nastaveni v_sync signalu
   if( (vertical_line < vertical + v_fp - 1) || (vertical_line >= vertical + v_fp + v_sw - 1) )
-    v_sync <= 1;
+    v_sync = 1;
   else
-    v_sync <= 0;
+    v_sync = 0;
 
   //nastaveni h_sync signalu
   if( (horizontal_line < horizontal + h_fp - 1) || (horizontal_line >= horizontal + h_fp + h_sw - 1) )
-    h_sync <= 1;
+    h_sync = 1;
   else
-    h_sync <= 0;
+    h_sync = 0;
 
 end
 
