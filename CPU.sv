@@ -7,7 +7,7 @@ module CPU(
 
   //SPI rozhrani
   output logic SPI_CS, SPI_SCK, SPI_SI,
-  input logic SPI_SO,
+  input logic SPI_SO
 
   /*output flash_io0_oe,
 	output flash_io1_oe,
@@ -21,20 +21,23 @@ module CPU(
 
 	input flash_io0_di,
 	input flash_io1_di,
-	input flash_io2_di,*/
-	input logic flash_io3_di
+	input flash_io2_di,
+	input logic flash_io3_di*/
   );
 
-    logic memory_enable, cache_stall;
-    logic [1:0] store_size;
-    logic [31:0] nextPC, instr_fetch, mem_addr, write_data, read_data;
+  logic memory_enable, fetch_valid, mem_read_data_valid, mem_write_ready;
+  logic fetch_enable;
+  logic [1:0] store_size;
+  logic [31:0] nextPC, instr_fetch, mem_addr, write_data, read_data;
 
-    logic [7:0] pressed_key;
-    logic clean_key_buffer;
+  logic [7:0] pressed_key;
+  logic clean_key_buffer;
 
-    logic video_write_enable;
-    logic [31:0] video_write_data;
-    logic [10:0] video_write_addr;
+  logic video_write_enable;
+  logic [7:0] video_write_data;
+  logic [10:0] video_write_addr;
+
+  //logic [31:0] core_debug;
 
 display_engine display_engine(
                               .CLK_CPU(CLK_CPU),
@@ -62,13 +65,19 @@ display_engine display_engine(
 
                 .mem_en(memory_enable),
                 .store_size(store_size),
-                .nextPC(nextPC),
+
                 .mem_addr(mem_addr),
                 .write_data(write_data),
-                .stall(cache_stall),
-                .instr_fetch(instr_fetch),
+                .dcache_write_ready(mem_write_ready),
 
                 .read_data(read_data),
+                .dcache_read_data_valid(mem_read_data_valid),
+
+                .nextPC(nextPC),
+                .instr_fetch(instr_fetch),
+                .fetch_valid(fetch_valid),
+                .fetch_enable(fetch_enable),
+
                 .SPI_CS(SPI_CS),
                 .SPI_SCK(SPI_SCK),
                 .SPI_SI(SPI_SI),
@@ -92,14 +101,22 @@ display_engine display_engine(
 core core(
           .resetn(resetn),
           .CLK(CLK_CPU),
-          .stall_mem(cache_stall),
+
           .instr_fetch(instr_fetch),
+          .fetch_valid(fetch_valid),
+          .PCfetch(nextPC),
+          .fetch_enable(fetch_enable),
+
           .mem_read_data(read_data),
-          .memory_en(memory_enable),
+          .mem_read_data_valid(mem_read_data_valid),
+          .memory_en_out(memory_enable),
+
           .store_size(store_size),
-          .nextPC(nextPC),
           .mem_write_data(write_data),
+          .mem_write_ready(mem_write_ready),
           .mem_addr(mem_addr)
+
+          //.debug(core_debug)
           );
 
 keyboard keyboard(
