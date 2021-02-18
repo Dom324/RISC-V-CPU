@@ -26,6 +26,7 @@ module spi_controller(
     input logic CLK, resetn,
 
     input logic icache_miss, dcache_miss,
+    output logic [1:0] mode,
     output logic SPI_data_ready,
 
     input logic [19:0] dcache_addr, icache_addr,
@@ -65,9 +66,9 @@ localparam invert_endianess = 0;					//opcode na cteni dat
 
   logic [31:0] SPI_data_buffer;
   logic [23:0] flash_addr;
-  logic busy;
+  logic busy, busyNext;
   logic receiving;
-  logic startup;
+  logic startup, startupNext;
 
   assign SPI_SCK = CLK;         //clock pro SPI sbernici
   assign SPI_CS = !busy;         //enable pin pro flash pamet
@@ -84,9 +85,20 @@ always_comb begin
     SPI_data = {SPI_data_buffer[7:0], SPI_data_buffer[15:8], SPI_data_buffer[23:16], SPI_data_buffer[31:24]};
   else
     SPI_data = SPI_data_buffer;
-    
+
 end
 
+always_ff @ (negedge CLK) begin
+
+  if(!busy) begin
+
+    if(dcache_miss == 1) flash_addr[19:0] <= dcache_addr + 19'h50000;
+    else if(icache_miss == 1) flash_addr[19:0] <= icache_addr + 19'h50000;
+    else flash_addr <= flash_addr;
+
+  end
+
+end
 
 always_ff @ (negedge CLK, negedge resetn) begin
 
@@ -100,48 +112,99 @@ always_ff @ (negedge CLK, negedge resetn) begin
   end
   else begin
 
-    if(startup) begin
-
-      if(bit_counter == 3'b111) begin
-
-        busy <= 0;
-        startup <= 0;
-
-      end
-      else busy <= 1;
-
-    end
+    busy <= busyNext;
+    startup <= startupNext;
 
   end
 
+end
 
-if(resetn & !startup) begin
+always_comb begin
+
+startupNext = 1;
+
+if(startup) begin
+
+  if(bit_counter == 3'b111) begin
+
+    busyNext = 0;
+    startupNext = 0;
+
+  end
+  else busyNext = 1;
+
+end else begin
+
+  startupNext = 0;
+
   if(!busy) begin
 
-    if(icache_miss == 1) begin
-      flash_addr[19:0] <= icache_addr + 19'h50000;
-      busy <= 1;
+    if(dcache_miss == 1) begin
+      //flash_addr[19:0] <= dcache_addr + 19'h50000;
+      busyNext = 1;
     end
-    else if(dcache_miss == 1) begin
-      flash_addr[19:0] <= dcache_addr + 19'h50000;
-      busy <= 1;
+    else if(icache_miss == 1) begin
+      //flash_addr[19:0] <= icache_addr + 19'h50000;
+      busyNext = 1;
     end
     else begin
-      flash_addr <= flash_addr;
-      busy <= 0;
+      //flash_addr <= flash_addr;
+      busyNext = 0;
     end
+
+  end else begin
+
+    //flash_addr[19:0] <= flash_addr[19:0];
+    if( (!icache_miss & (mode == 2)) || (!dcache_miss & (mode == 1)) ) begin
+      busyNext = 0;
+    end else begin
+
+      if(SPI_data_ready) begin
+        busyNext = 0;
+      end
+      else busyNext = 1;
+
+    end
+  end
+end
+end
+
+always_ff @ (posedge CLK, negedge resetn) begin
+
+
+  if(!resetn) begin
+
+    mode <= 0;
+
+  end
+
+else if(resetn & !startup) begin
+  if(!busy) begin
+
+    if(dcache_miss == 1) mode <= 1;
+    else if(icache_miss == 1) mode <= 2;
+    else mode <= 0;
 
   end
   else begin
 
     //flash_addr[19:0] <= flash_addr[19:0];
+    if( (!icache_miss & (mode == 2)) || (!dcache_miss & (mode == 1)) ) begin
 
-    if(SPI_data_ready) begin
-      busy <= 0;
-      startup <= 0;
+      mode <= 0;
+
     end
-    else busy <= 1;
+    else begin
 
+      if(SPI_data_ready) mode <= 0;
+      else begin
+
+        if(dcache_miss == 1) mode <= 1;
+        else if(icache_miss == 1) mode <= 2;
+        else mode <= 0;
+
+      end
+    end
   end
 end
 end
