@@ -22,11 +22,12 @@ module memory(
     input logic mem_en, fetch_enable,
     input logic [1:0] store_size,
     input logic [31:0] nextPC, mem_addr, write_data,
-    output logic fetch_valid, dcache_read_data_valid, dcache_write_ready,
-    output logic [31:0] instr_fetch, read_data,
+    output logic fetch_valid, read_data_valid, dcache_write_ready,
+    output logic [31:0] instr_fetch, mem_read_data,
 
     //klavesnice
     input logic [7:0] pressed_key,
+    input logic keyboard_valid,
     output logic clean_key_buffer,
     //klavesnice
 
@@ -57,16 +58,15 @@ module memory(
 );
 
   logic dcache_miss;
-  logic dcache_read_en, dcache_write_en, dcache_fetch;
+  logic dcache_read_en, dcache_write_en, dcache_fetch, dcache_read_data_valid;
   logic [31:0] dcache_write_data, dcache_read_data;
-  logic [19:0] dcache_read_addr, dcache_write_addr;
 
   logic icache_miss;
   logic icache_fetch;
   logic [31:0] icache_read_data;
 
   logic SPI_data_ready;
-  logic [31:0] SPI_data, read_data_mem, word_debug;
+  logic [31:0] SPI_data;
 
   logic [1:0] d_i_mode;
 
@@ -74,20 +74,21 @@ module memory(
   //assign dcache_miss = 0;
   //assign dcache_stall = 0;
 
+  assign video_write_data = write_data[7:0];
+  assign video_write_addr = mem_addr[10:0];
 
 always_comb begin
 
-  video_write_data = write_data[7:0];
   //video_write_data = {3'b000, icache_miss, 3'b000, SPI_data_ready, 3'b000, dcache_miss, 4'b000, icache_read_data[7:0], SPI_data[7:0]};
   //video_write_data = SPI_data;
-  video_write_addr = mem_addr[10:0];
 
 //defaultni hodnoty
 video_write_enable = 0;
 clean_key_buffer = 0;
-read_data_mem = 0;
+mem_read_data = 0;
 dcache_read_en = 0;
 dcache_write_en = 0;
+read_data_valid = 0;
 //defaultni hodnoty
 
 
@@ -96,16 +97,23 @@ dcache_write_en = 0;
 
     if(mem_addr[31:20] == 12'b000000000000) begin         //pouziva se pamet
 
-      case(store_size)        // synopsys full_case parallel_case
+      mem_read_data = dcache_read_data;
+      read_data_valid = dcache_read_data_valid;
+
+      case(store_size)
         2'b11: begin                  //cte se z pameti
           dcache_read_en = 1;
           dcache_write_en = 0;
-          read_data_mem = dcache_read_data;
+
         end                             //zapisuje se do pameti
         2'b10, 2'b01, 2'b00: begin
           dcache_read_en = 0;
           dcache_write_en = 1;
-          read_data_mem = 0;
+        end
+
+        default: begin
+          dcache_read_en = 0;
+          dcache_write_en = 0;
         end
 
       endcase
@@ -119,21 +127,31 @@ dcache_write_en = 0;
     else if( (mem_addr == 32'hFFFFFFFF) && (store_size == 2'b11)) begin
 
       clean_key_buffer = 1;
-      read_data_mem = {{24{1'b0}}, pressed_key [7:0]};
+      mem_read_data = {{24{1'b0}}, pressed_key [7:0]};
+      read_data_valid = keyboard_valid;
 
     end
     else begin
 
       video_write_enable = 0;
       clean_key_buffer = 0;
-      read_data_mem = 0;
+      mem_read_data = 0;
       dcache_read_en = 0;
       dcache_write_en = 0;
 
     end
 
+  end
+  else begin
+
+    video_write_enable = 0;
+    clean_key_buffer = 0;
+    mem_read_data = 0;
+    dcache_read_en = 0;
+    dcache_write_en = 0;
 
   end
+
 end
 
 always_comb begin
@@ -141,11 +159,7 @@ always_comb begin
 //defaultni hodnoty
 instr_fetch = icache_read_data;
 dcache_write_data = write_data;
-read_data = read_data_mem;
 //defaultni hodnoty
-
-  dcache_write_addr = mem_addr;
-  dcache_read_addr = mem_addr;
 
 //icache cache miss
   icache_fetch = SPI_data_ready & d_i_mode[1];
@@ -174,7 +188,7 @@ spi_controller SPI_Flash(
                         .SPI_CS(SPI_CS),
                         .SPI_SCK(SPI_SCK),
                         .SPI_SI(SPI_SI),
-                        .SPI_SO(SPI_SO),
+                        .SPI_SO(SPI_SO)
                         /*.flash_io0_oe(flash_io0_oe),
                         .flash_io1_oe(flash_io1_oe),
                         .flash_io2_oe(flash_io2_oe),
@@ -189,7 +203,7 @@ spi_controller SPI_Flash(
                         .flash_io1_di(flash_io1_di),
                         .flash_io2_di(flash_io2_di),
                         .flash_io3_di(flash_io3_di),*/
-                        .word_debug(word_debug)
+                        //.word_debug(word_debug)
   );
 
 
@@ -203,7 +217,7 @@ dcache L1D(
           .cache_miss(dcache_miss),
           .store_size(store_size),
 
-          .mem_addr(dcache_read_addr),
+          .mem_addr(mem_addr[19:0]),
 
           .RDATA_OUT(dcache_read_data),
           .RDATA_valid(dcache_read_data_valid),
