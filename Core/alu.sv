@@ -31,6 +31,8 @@ always_comb begin
 
 	  3'b111:		out = a & b;
 
+    default: out = 0;
+
   endcase
 end
 endmodule

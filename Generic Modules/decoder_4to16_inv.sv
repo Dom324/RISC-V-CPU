@@ -7,7 +7,7 @@ always_comb begin
 
 out = 0;
 
-  case(select)    // synopsys full_case parallel_case
+  case(select)
 
     4'b0000: out = a[15];
 	  4'b0001: out = a[14];
@@ -25,6 +25,7 @@ out = 0;
     4'b1101: out = a[2];
     4'b1110: out = a[1];
     4'b1111: out = a[0];
+    default: out = 0;
 
   endcase
 end

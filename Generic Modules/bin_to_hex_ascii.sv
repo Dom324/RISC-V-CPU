@@ -6,7 +6,7 @@ always_comb begin
 
 out = 0;
 
-case(in)      // synopsys full_case parallel_case
+case(in)
   0: out = 8'h30;
   1: out = 8'h31;
   2: out = 8'h32;
@@ -23,6 +23,7 @@ case(in)      // synopsys full_case parallel_case
   13: out = 8'h44;
   14: out = 8'h45;
   15: out = 8'h46;
+  default: out = 0;
 endcase
   end
 endmodule
