@@ -61,16 +61,18 @@ module dcache(
 
 
 //logika pro meneni stavu cache
-always_ff @ (posedge CLK) begin
-
-  if(!cache_miss)
-    mem_addr_old <= mem_addr;
+always_ff @ (posedge CLK, negedge resetn) begin
 
 
   if(!resetn) begin
     state <= 0;
   end else begin
+
     state <= nextState;
+
+    if(!cache_miss)
+      mem_addr_old <= mem_addr;
+
   end
 
 end
@@ -79,7 +81,7 @@ always_comb begin
 
   nextState = 0;
 
-    case(state)      // synopsys full_case parallel_case
+    case(state)
 
       2'b00: begin                    //stav == 0, cache je neaktivni
 
@@ -138,6 +140,8 @@ always_comb begin
         else nextState = 3;
       end
 
+      default: nextState = 0;
+
     endcase
 
 end
@@ -153,32 +157,35 @@ write_ready = 0;
 write_data = write_data_from_cpu;
 //defaultni hodnoty
 
-  case(state)      // synopsys full_case parallel_case
+  case(state)
     2'b00: RADDR_TAG = mem_addr[9:2];
     2'b01: RADDR_TAG = mem_addr_old[9:2];     //read
     2'b10: RADDR_TAG = mem_addr_old[9:2];    //write
     2'b11: RADDR_TAG = mem_addr_old[9:2];
+    default: RADDR_TAG = 0;
   endcase
 
   WADDR_TAG = RADDR_TAG;
 
-  case(state)      // synopsys full_case parallel_case
+  case(state)
     2'b00: RADDR_CACHE = mem_addr[9:2];                  //dont care
     2'b01: RADDR_CACHE = mem_addr_old[9:2];     //read
     2'b10: RADDR_CACHE = mem_addr_old[9:2];    //write
     2'b11: RADDR_CACHE = mem_addr_old[9:2];     //fetch read
+    default: RADDR_CACHE = 0;
   endcase
 
 
-  case(state)          // synopsys full_case parallel_case
+  case(state)
     2'b00: WADDR_CACHE = 0;                  //dont care
     2'b01: WADDR_CACHE = 0;     //read
     2'b10: WADDR_CACHE = mem_addr_old[9:2];    //write
     2'b11: WADDR_CACHE = mem_addr_old[9:2];
+    default: WADDR_CACHE = 0;
   endcase
 
 
-  case(state)        // synopsys full_case parallel_case
+  case(state)
     2'b00: begin
       cache_miss = 0;
       RDATA_valid = 0;
@@ -369,12 +376,14 @@ always_comb begin
     else if(store_size == 2'b11) MASK = 32'hffffffff;     //nelegalni operace, nezapisuje se, proto MASK = 32'hffffffff
     //nastaveni masky podle toho kolik Bytu zapisujeme
 
-    case(set_used)         // synopsys full_case parallel_case
-      2'b00: WE_setA = 1;
-      2'b01: WE_setB = 1;
-      2'b10: WE_setC = 1;
-      2'b11: WE_setD = 1;
-    endcase
+    if(!cache_miss) begin
+      case(set_used)
+        2'b00: WE_setA = 1;
+        2'b01: WE_setB = 1;
+        2'b10: WE_setC = 1;
+        2'b11: WE_setD = 1;
+      endcase
+    end
 
     if(set_used == 2'b00) begin
       tagA_NEW[13] = 1;                   //valid bit == 1
@@ -407,7 +416,7 @@ always_comb begin
     MASK = 32'h00000000;
     WE_tag = 1;
 
-    case(set_used)         // synopsys full_case parallel_case
+    case(set_used)
       2'b00: WE_setA = 1;
       2'b01: WE_setB = 1;
       2'b10: WE_setC = 1;

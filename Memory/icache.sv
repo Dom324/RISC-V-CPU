@@ -47,19 +47,21 @@ module icache(
 
     logic [1:0] state, nextState;
 
-    assign debug = state;
+    //assign debug = state;
 
 
 //logika pro meneni stavu cache
-always_ff @ (posedge CLK) begin
-
-  if(!cache_miss)
-    read_addr_old <= read_addr;
+always_ff @ (posedge CLK, negedge resetn) begin
 
   if(!resetn) begin
     state <= 0;
   end else begin
+  
     state <= nextState;
+
+    if(!cache_miss)
+      read_addr_old <= read_addr;
+
   end
 
 end
@@ -69,7 +71,7 @@ always_comb begin
 
 nextState = 0;
 
-  case(state)        // synopsys full_case parallel_case
+  case(state)
 
     2'b00: begin                    //stav == 0, cache je neaktivni
       if(read_en == 1) begin
@@ -111,6 +113,7 @@ nextState = 0;
       end
     end
 
+    default: nextState = 0;
     //2'b11: state <= 0;              //stav == 3, nelegalni stav
 
   endcase
@@ -123,7 +126,7 @@ always_comb begin
   //RADDR_TAG = read_addr[9:2];    //read
   //RADDR_CACHE = read_addr[9:2];    //read
 
-  case(state)      // synopsys full_case parallel_case
+  case(state)
     2'b00: RADDR_TAG = read_addr[9:2];                  //dont care
     2'b01: RADDR_TAG = read_addr_old[9:2];     //read
     2'b10: RADDR_TAG = read_addr_old[9:2];    //write
@@ -131,7 +134,7 @@ always_comb begin
     //default: RADDR_TAG = 0;                 //dont care
   endcase
 
-  case(state)      // synopsys full_case parallel_case
+  case(state)
     2'b00: RADDR_CACHE = read_addr[9:2];                  //dont care
     2'b01: RADDR_CACHE = read_addr_old[9:2];     //read
     2'b10: RADDR_CACHE = read_addr_old[9:2];    //write
@@ -146,7 +149,7 @@ always_comb begin
   set_used = 2'b00;           //dont care
 //defaultni hodnoty
 
-case(state)          // synopsys full_case
+case(state)
   2'b00: begin
 
     cache_miss = 0;
@@ -224,17 +227,23 @@ case(state)          // synopsys full_case
 
   end
 
-  /*default: begin
+  default: begin
 
     cache_miss = 0;
     RDATA_OUT = 0;
     set_used = 2'b00;       //dont care
+    fetch_valid = 0;
 
-  end*/
+  end
 endcase
 
 end
 
+
+  assign LRU_A = tagA[11:10];
+  assign LRU_B = tagB[11:10];
+  assign LRU_C = tagC[11:10];
+  assign LRU_D = tagD[11:10];
 
 always_comb begin
 
@@ -242,11 +251,6 @@ always_comb begin
   tagB_NEW[15:14] = 0;
   tagC_NEW[15:14] = 0;
   tagD_NEW[15:14] = 0;
-
-  LRU_A = tagA[11:10];
-  LRU_B = tagB[11:10];
-  LRU_C = tagC[11:10];
-  LRU_D = tagD[11:10];
 
 //defaultni hodnoty
   MASK = 32'hffffffff;
@@ -312,7 +316,7 @@ always_comb begin
     WE_tagC = 1;
     WE_tagD = 1;
 
-    case(set_used)       // synopsys full_case
+    case(set_used)
       2'b00: WE_setA = 1;
       2'b01: WE_setB = 1;
       2'b10: WE_setC = 1;
@@ -353,7 +357,7 @@ always_comb begin
     WE_tagC = 1;
     WE_tagD = 1;
 
-    case(set_used)          // synopsys full_case //aktualizace LRU bitu
+    case(set_used)        //aktualizace LRU bitu
       2'b00: begin
         if(LRU_B < LRU_A) tagB_NEW[11:10] = LRU_B + 1;
         else tagB_NEW[11:10] = LRU_B;
