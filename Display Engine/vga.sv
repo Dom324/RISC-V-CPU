@@ -124,11 +124,26 @@ end
 
 always_ff @ (posedge CLK_VGA) begin
 
-  /*if(reset)begin
-  //counter <= 15;
-  counter = 0;
+  if( (horizontal_line <= horizontal) && (vertical_line <= vertical) ) begin		//jestli mame tisknout obraz
+
+	  if(counter == 15) begin
+      counter <= 0;
+    end
+  	else begin
+      counter <= counter + 1;
+    end
+
   end
-  else begin*/
+  
+
+  if(horizontal_line == horizontal + h_fp + h_sw + h_bp - 1) begin		//jestli jsme na konci radku, end_of_line == 1
+    counter <= 0;
+  end
+
+  //end
+end
+
+always_comb begin
 
   if( (horizontal_line <= horizontal) && (vertical_line <= vertical) ) begin		//jestli mame tisknout obraz
 
@@ -141,22 +156,12 @@ always_ff @ (posedge CLK_VGA) begin
       newData = 0;
     end
 
-	  if(counter == 15) begin
-      counter <= 0;
-    end
-  	else begin
-      counter <= counter + 1;
-    end
   end
   else begin
     newData = 0;
 	  pixel = 0;
   end
 
-  if(horizontal_line == horizontal + h_fp + h_sw + h_bp - 1) begin		//jestli jsme na konci radku, end_of_line == 1
-    counter <= 0;
-  end
-
-  //end
 end
+
 endmodule
