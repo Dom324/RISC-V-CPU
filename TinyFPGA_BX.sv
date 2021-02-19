@@ -58,7 +58,7 @@ module TinyFPGA_BX (
 
   logic keyboard_data, keyboard_clock, hsync, vsync, VGA_pixel, CLK_VGA, CLK_CPU;
   logic [26:0] clk_div;
-  logic SPI_CS, SPI_CLK;
+  logic SPI_CS, SPI_CLK, SPI_SO, SPI_SI;
 
   logic resetn, resetp, pll_locked;
 
