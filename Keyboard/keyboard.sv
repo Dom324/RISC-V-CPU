@@ -1,12 +1,15 @@
 module keyboard(
   input logic CLK,
   input logic  keyboard_data, keyboard_clock, clean_key_buffer,
-  output logic [7:0] pressed_key
+  output logic [7:0] pressed_key,
+  output logic keyboard_valid
 );
 
   logic [7:0] buffer, CODEWORD, ascii;
   logic is_valid;
 
+
+  assign keyboard_valid = is_valid;
   assign pressed_key = buffer;
 
   always_ff @ (posedge CLK) begin
