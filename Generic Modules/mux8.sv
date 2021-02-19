@@ -8,7 +8,7 @@ always_comb begin
 
 out = 0;
 
-    case(select)       // synopsys full_case parallel_case
+    case(select)
 
     3'b000: out = a;
 	  3'b001: out = b;
@@ -18,6 +18,7 @@ out = 0;
 	  3'b101: out = f;
 	  3'b110: out = g;
 	  3'b111: out = h;
+    default: out = 0;
 
     endcase
   end

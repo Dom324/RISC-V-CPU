@@ -8,12 +8,13 @@ always_comb begin
 
 out = 0;
 
-    case(select)      // synopsys full_case parallel_case
+    case(select)
 
       2'b00: out = a;
 	    2'b01: out = b;
 	    2'b10: out = c;
 	    2'b11: out = d;
+      default: out = 0;
 
     endcase
   end
