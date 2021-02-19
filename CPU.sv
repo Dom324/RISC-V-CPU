@@ -28,10 +28,10 @@ module CPU(
   logic memory_enable, fetch_valid, mem_read_data_valid, mem_write_ready;
   logic fetch_enable;
   logic [1:0] store_size;
-  logic [31:0] nextPC, instr_fetch, mem_addr, write_data, read_data;
+  logic [31:0] nextPC, instr_fetch, mem_addr, write_data, mem_read_data;
 
   logic [7:0] pressed_key;
-  logic clean_key_buffer;
+  logic clean_key_buffer, keyboard_valid;
 
   logic video_write_enable;
   logic [7:0] video_write_data;
@@ -58,6 +58,7 @@ display_engine display_engine(
 
                 .pressed_key(pressed_key),
                 .clean_key_buffer(clean_key_buffer),
+                .keyboard_valid(keyboard_valid),
 
                 .video_write_enable(video_write_enable),
                 .video_write_data(video_write_data),
@@ -70,8 +71,8 @@ display_engine display_engine(
                 .write_data(write_data),
                 .dcache_write_ready(mem_write_ready),
 
-                .read_data(read_data),
-                .dcache_read_data_valid(mem_read_data_valid),
+                .mem_read_data(mem_read_data),
+                .read_data_valid(mem_read_data_valid),
 
                 .nextPC(nextPC),
                 .instr_fetch(instr_fetch),
@@ -107,9 +108,9 @@ core core(
           .PCfetch(nextPC),
           .fetch_enable(fetch_enable),
 
-          .mem_read_data(read_data),
+          .mem_read_data(mem_read_data),
           .mem_read_data_valid(mem_read_data_valid),
-          .memory_en_out(memory_enable),
+          .memory_en(memory_enable),
 
           .store_size(store_size),
           .mem_write_data(write_data),
@@ -124,7 +125,8 @@ keyboard keyboard(
                 .keyboard_data(keyboard_data),
                 .keyboard_clock(keyboard_clock),
                 .clean_key_buffer(clean_key_buffer),
-                .pressed_key(pressed_key)
+                .pressed_key(pressed_key),
+                .keyboard_valid(keyboard_valid)
                 );
 
 endmodule
