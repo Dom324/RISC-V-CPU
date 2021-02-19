@@ -5,10 +5,45 @@ module decode(
   output logic [6:0] op,
   output logic [4:0] rd, rs1, rs2,
   output logic [31:0] imm,
-  output logic [2:0] instrType
+  output logic [2:0] instrType,
+  output logic stall,
+  input logic mem_write_ready, mem_read_data_valid
 );
 
   assign op = instr[6:0];
+  logic unknown_instr;
+
+always_comb begin
+
+  if(op == 7'b0000011) begin	//Load instruction
+
+      if(mem_read_data_valid) stall = 0;
+      else stall = 1;
+
+  end
+  else if(instrType == 3'b101) begin			//S-type instruction
+
+    if(mem_write_ready) stall = 0;
+    else stall = 1;
+
+  end
+  else if(unknown_instr == 1) stall = 1;
+  else stall = 0;
+
+end
+
+always_comb begin
+
+  case(instr[6:0])
+
+    7'b0110111, 7'b0010111, 7'b1101111, 7'b1100011, 7'b1100111, 7'b0000011,
+    7'b0010011, 7'b0001111, 7'b1110011, 7'b0100011, 7'b0110011: unknown_instr = 0;
+
+    default: unknown_instr = 1;
+
+  endcase
+  
+end
 
 always_comb begin
 
@@ -23,7 +58,7 @@ instrType = 3'b000;
 aluOp = funct3;
 //defaultni hodnoty
 
-  case(instr[6:0])            // synopsys parallel_case
+  case(instr[6:0])
 
     7'b0110111, 7'b0010111: begin			//U-type instruction
 
@@ -96,6 +131,19 @@ aluOp = funct3;
 	    instrType = 3'b110;
 
       imm = 0;
+    end
+
+    default: begin
+
+      rs1 = 0;
+      rs2 = 0;
+      rd = 0;
+      funct3 = 0;
+      funct7 = 0;
+      imm = 0;
+      instrType = 3'b000;
+      aluOp = funct3;
+
     end
 
   endcase

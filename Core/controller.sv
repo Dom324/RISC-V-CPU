@@ -9,8 +9,7 @@ module controller(
          aluAsel,     //prepina jestli aluA vstup je reg (1) nebo pc (0)
   output logic [1:0] wdSelect,	//co za data se bude zapisovat do registru - "00" vysledek z ALU, "01" data z pameti, "10" PCplus4 (pouziva se pro ukladani navratovych adres), "11" imm (konstanta)
 			   store_size,		//kolik Bytu se bude zapisovat do pameti - "00" jeden Byte, "01" dva Byty, "10" ctyri Byty, "11" instrukce nezapisuje data ale cte je (LOAD instrukce)
-  output logic stall, jump,
-  input logic mem_write_ready, mem_read_data_valid
+  output logic jump
 );
 
 always_comb begin
@@ -23,11 +22,10 @@ aluBsel = 1'b0;
 aluAsel = 1'b1;
 memory_en = 1'b0;
 store_size = 2'b11;
-stall = 0;
 jump = 0;
 //defaultni hodnoty
 
-  case(instrType)           // synopsys parallel_case
+  case(instrType)
 
     3'b001: begin			//U-type instruction
 
@@ -88,11 +86,7 @@ jump = 0;
         jump = 1;
 
       end
-
       else if(op == 7'b0000011) begin	//Load instruction
-
-          if(mem_read_data_valid) stall = 0;
-          else stall = 1;
 
           pcControl = 0;
           wdSelect = 2'b01;
@@ -106,6 +100,12 @@ jump = 0;
           wdSelect = 2'b00;
           memory_en = 1'b0;
       end
+      else begin
+        pcControl = 0;
+        we_reg = 0;
+        wdSelect = 2'b00;
+        memory_en = 1'b0;
+      end
     end
 
     3'b101: begin			//S-type instruction
@@ -115,9 +115,6 @@ jump = 0;
 	    wdSelect = 2'bxx;
 	    aluBsel = 1'b0;
 	    memory_en = 1'b1;
-
-      if(mem_write_ready) stall = 0;
-      else stall = 1;
 
 	    case(funct3)
 	      3'b000: store_size = 2'b00;
@@ -144,7 +141,14 @@ jump = 0;
     end
 
     default: begin
-      stall = 1;
+      we_reg = 0;
+      pcControl = 0;
+      wdSelect = 2'b00;
+      aluBsel = 1'b0;
+      aluAsel = 1'b1;
+      memory_en = 1'b0;
+      store_size = 2'b11;
+      jump = 0;
     end
 
   endcase
