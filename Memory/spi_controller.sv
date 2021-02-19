@@ -34,7 +34,7 @@ module spi_controller(
 
     //SPI rozhrani
     output logic SPI_CS, SPI_SCK, SPI_SI,
-    input logic SPI_SO,
+    input logic SPI_SO
 
     /*output flash_io0_oe,
   	output flash_io1_oe,
@@ -52,7 +52,7 @@ module spi_controller(
   	input  flash_io3_di,*/
     //SPI rozhrani
 
-    output logic [31:0] word_debug      //debug
+    //output logic [31:0] word_debug      //debug
 );
 
 localparam opcode = 8'h03;					//opcode na cteni dat
@@ -65,7 +65,7 @@ localparam invert_endianess = 0;					//opcode na cteni dat
   logic [7:0] flash_byte;
 
   logic [31:0] SPI_data_buffer;
-  logic [23:0] flash_addr;
+  logic [19:0] flash_addr;
   logic busy, busyNext;
   logic receiving;
   logic startup, startupNext;
@@ -73,7 +73,7 @@ localparam invert_endianess = 0;					//opcode na cteni dat
   assign SPI_SCK = CLK;         //clock pro SPI sbernici
   assign SPI_CS = !busy;         //enable pin pro flash pamet
 
-  assign word_debug = {flash_byte, 3'b000, receiving, 3'b000, startup, 3'b000, SPI_CS, 3'b000, SPI_SCK, 3'b000, SPI_SI, 3'b000, SPI_SO};
+  //assign word_debug = {flash_byte, 3'b000, receiving, 3'b000, startup, 3'b000, SPI_CS, 3'b000, SPI_SCK, 3'b000, SPI_SI, 3'b000, SPI_SO};
 
   //SPI_SI bit na vystupu
   decoder_3to8_inv output_select(bit_counter, flash_byte, SPI_SI);
@@ -87,6 +87,8 @@ always_comb begin
     SPI_data = SPI_data_buffer;
 
 end
+
+  //assign flash_addr [23:20] = 4'b0000;
 
 always_ff @ (negedge CLK) begin
 
@@ -102,7 +104,6 @@ end
 
 always_ff @ (negedge CLK, negedge resetn) begin
 
-  flash_addr [23:20] = 4'b0000;
 
   if(!resetn) begin
 
@@ -239,7 +240,7 @@ always_ff @ (negedge CLK) begin
   end
 end
 
-always_ff @ (posedge CLK) begin
+always_ff @ (posedge CLK, negedge resetn) begin
 
   if(!resetn) begin
 
@@ -266,7 +267,7 @@ always_comb begin
 
   if(startup) flash_byte = wakeup_op;
   else if(byte_counter == 2'b00) flash_byte = opcode;
-  else if(byte_counter == 2'b01) flash_byte = flash_addr[23:16];
+  else if(byte_counter == 2'b01) flash_byte = {4'b0000, flash_addr[19:16]};
   else if(byte_counter == 2'b10) flash_byte = flash_addr[15:8];
   else if(byte_counter == 2'b11) flash_byte = flash_addr[7:0];
   else flash_byte = opcode;
