@@ -100,12 +100,6 @@ jump = 0;
           wdSelect = 2'b00;
           memory_en = 1'b0;
       end
-      else begin
-        pcControl = 0;
-        we_reg = 0;
-        wdSelect = 2'b00;
-        memory_en = 1'b0;
-      end
     end
 
     3'b101: begin			//S-type instruction
