@@ -29,8 +29,9 @@ module icache(
     input logic [19:0] read_addr,
     input logic [31:0] write_data,
     output logic cache_miss, fetch_valid,
-    output logic [31:0] RDATA_OUT
-    //output logic [1:0] debug
+    output logic [31:0] RDATA_OUT,
+    output logic [31:0] debug,
+    input logic [7:0] DIP_switch
 );
 
     logic [19:0] read_addr_old;
@@ -50,13 +51,25 @@ module icache(
     //assign debug = state;
 
 
+always_comb begin
+
+  case(DIP_switch[4:0])
+    5'b00001: debug = read_addr_old;
+    5'b00010: debug = RDATA_OUT;
+    5'b00011: debug = {2'b00, state, 3'b000, cache_miss, 3'b000, fetch_valid, 2'b10, set_used, 16'h0000};
+    default: debug = 0;
+  endcase
+
+end
+
 //logika pro meneni stavu cache
-always_ff @ (posedge CLK, negedge resetn) begin
+always_ff @ (posedge CLK) begin
 
   if(!resetn) begin
     state <= 0;
+    read_addr_old <= 0;
   end else begin
-  
+
     state <= nextState;
 
     if(!cache_miss)
@@ -349,7 +362,7 @@ always_comb begin
   end
 //konec zapisovani noveho bloku
 
-  if( ((state == 2'b01) && (cache_miss == 0)) || ((state == 2'b10) && (fetch == 1)) ) begin
+  else if( ((state == 2'b01) && (cache_miss == 0)) || ((state == 2'b10) && (fetch == 0)) ) begin
 
     MASK = 32'h00000000;
     WE_tagA = 1;
@@ -410,6 +423,19 @@ always_comb begin
         tagD_NEW[11:10] = 0;
       end
     endcase
+  end
+  else begin
+
+      WE_tagA = 0;
+      WE_tagB = 0;
+      WE_tagC = 0;
+      WE_tagD = 0;
+
+      WE_setA = 0;
+      WE_setB = 0;
+      WE_setC = 0;
+      WE_setD = 0;
+
   end
 end
 
