@@ -4,15 +4,18 @@ module core(
   input logic mem_read_data_valid, mem_write_ready,
   input logic [31:0] instr_fetch, mem_read_data, 				//vstupni instrukce + prectena data z pameti
   input logic fetch_valid,
-  output logic memory_en,								//vystupni signal memory_en -> pokud je 1, pamet se bude pouzivat
+  output logic memory_en_out,								//vystupni signal memory_en -> pokud je 1, pamet se bude pouzivat
   output logic [1:0] store_size,						//"00" - zapisuje se 8 bitu, "01" zapisuje se 16 bitu, "10" zapisuje se 32 bitu, "11" z pameti se cte
   output logic [31:0] PCfetch,							//adresa z ktere se bude nacitat pristi instrukce
   output logic [31:0] mem_write_data, mem_addr,			//data na zapsani, adresa kam zapisovat/cist
   //output logic [31:0] debug,
-  output logic fetch_enable
+  output logic fetch_enable,
+
+  input logic [7:0] DIP_switch,
+  output logic [31:0] debug,
+  input logic stall_debug
 );
 
-  logic stall_pc, fetch_valid_exec;
   logic [31:0] instr_fetch_exec;
 
   logic [31:0] PCmux, PCplus4, wd, rd1, rd2, aluB, aluA, imm, memData, aluRes;
@@ -25,16 +28,28 @@ module core(
   logic we_reg, we_reg_controller, pcControl, aluBsel, aluAsel;
   logic [1:0] wdSelect;
 
-  logic jump, decoder_stall;
+  logic jump, decoder_stall, memory_en, fetch_valid_exec;
+  logic stall_pc;
 
   //assign debug = {3'b000, stall_pc, instr_fetch[27:0]};
 
-  //assign memory_en_out = memory_en & fetch_valid_exec;
+  assign memory_en_out = memory_en & fetch_valid_exec;
+
+always_comb begin
+
+  case(DIP_switch[6:0])
+    7'b1000000: debug = PC;
+    7'b1000001: debug = nextPC;
+    7'b1000010: debug = instr_fetch_exec;
+    7'b1000011: debug = {3'b000, stall_pc, 3'b000, fetch_valid_exec, 3'b000, decoder_stall, 3'b000, stall_debug, 16'b00000000000000000000};
+    7'b1000100: debug = aluRes;
+    7'b1000101: debug = memData;
+    default: debug = PC;
+  endcase
+
+end
 
   decode decoder(instr_fetch_exec, funct3, aluOp, funct7, op, rd, rs1, rs2, imm, instrType, decoder_stall, mem_write_ready, mem_read_data_valid);
-
-  /*controller controller(CLK, op, instrType, funct3, we_reg_controller, pcControl, memory_en,
-  aluBsel, aluAsel, wdSel, store_size, decoder_stall, jump, mem_write_ready, mem_read_data_valid);*/
 
   controller controller(
       .CLK,
@@ -65,9 +80,10 @@ module core(
     .nextPC,
     .instr_fetch_exec,
     .fetch_enable,
-    .stall_pc,
     .we_reg,
-    .fetch_valid_exec
+    .fetch_valid_exec,
+    .stall_pc,
+    .stall_debug(stall_debug)
     );
 
 always_comb begin
@@ -117,7 +133,7 @@ memData = 0;
 mem_write_data = 0;
 //defaultni hodnoty
 
-  if(funct7 == 7'b0000011) begin			//jedna se o LOAD instrukci, nacitaji se data z pameti
+  if(op == 7'b0000011) begin			//jedna se o LOAD instrukci, nacitaji se data z pameti
 
     case(funct3)
 
