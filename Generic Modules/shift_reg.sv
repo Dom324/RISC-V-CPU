@@ -17,7 +17,6 @@ always_ff @ (posedge CLK) begin
     shift_register[0] <= in;
 
   end
-  else shift_register <= shift_register;
 
 end
 endmodule
