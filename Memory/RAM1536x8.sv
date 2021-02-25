@@ -3,14 +3,14 @@ Wrapper pro block ram pro ICE40 LP8K, viz. MemoryUsageGuideforiCE40Devices.pdf
 1536 adres, kazda po 8 bitech. Positive edge read, Positive edge write
 */
 module RAM1536x8(
-  input RCLK, RE, WCLK, WE,
-	input [10:0] RADDR, WADDR,
-  input [7:0] WDATA,
-	output reg [7:0] RDATA_OUT
+  input logic RCLK, RE, WCLK, WE,
+	input logic [10:0] RADDR, WADDR,
+  input logic [7:0] WDATA,
+	output logic [7:0] RDATA_OUT
 );
 
-  reg RE_bank0, RE_bank1, RE_bank2, WE_bank0, WE_bank1, WE_bank2;
-  wire [7:0] RDATA_bank0, RDATA_bank1, RDATA_bank2;
+  logic RE_bank0, RE_bank1, RE_bank2, WE_bank0, WE_bank1, WE_bank2;
+  logic [7:0] RDATA_bank0, RDATA_bank1, RDATA_bank2;
 
 always_comb begin
 
@@ -63,11 +63,16 @@ WE_bank2 = 0;
     if(WADDR[10:9] == 2'b00) begin      //cte se z bank0
       WE_bank0 = 1;
     end
-    if(WADDR[10:9] == 2'b01) begin      //cte se z bank1
+    else if(WADDR[10:9] == 2'b01) begin      //cte se z bank1
       WE_bank1 = 1;
     end
-    if(WADDR[10:9] == 2'b10) begin      //cte se z bank2
+    else if(WADDR[10:9] == 2'b10) begin      //cte se z bank2
       WE_bank2 = 1;
+    end
+    else begin
+      WE_bank0 = 0;
+      WE_bank1 = 0;
+      WE_bank2 = 0;
     end
   end
 
