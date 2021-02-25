@@ -61,11 +61,12 @@ module dcache(
 
 
 //logika pro meneni stavu cache
-always_ff @ (posedge CLK, negedge resetn) begin
+always_ff @ (posedge CLK) begin
 
 
   if(!resetn) begin
     state <= 0;
+    mem_addr_old <= 0;
   end else begin
 
     state <= nextState;
@@ -291,6 +292,7 @@ write_data = write_data_from_cpu;
       if(fetch) begin
 
         cache_miss = 0;
+        RDATA_valid = 1;
         RDATA_OUT = write_data;
 
         if(tagA[13] == 0) set_used = 2'b00;
@@ -323,17 +325,64 @@ write_data = write_data_from_cpu;
 end
 
 
+always_comb begin
+
+  WE_tag = 0;
+  WE_setA = 0;
+  WE_setB = 0;
+  WE_setC = 0;
+  WE_setD = 0;
+//defaultni hodnoty
+
+//cteme data
+  if((state == 2'b01) && (cache_miss == 0)) begin
+
+    WE_tag = 1;
+
+  end   //konec cteni dat
+  else if(state == 2'b10) begin
+
+    WE_tag = 1;
+
+    if(!cache_miss) begin
+      case(set_used)
+        2'b00: WE_setA = 1;
+        2'b01: WE_setB = 1;
+        2'b10: WE_setC = 1;
+        2'b11: WE_setD = 1;
+      endcase
+    end
+
+  end
+  else if((state == 2'b11) && (fetch == 1)) begin     //fetchujeme data
+
+    WE_tag = 1;
+
+    case(set_used)
+      2'b00: WE_setA = 1;
+      2'b01: WE_setB = 1;
+      2'b10: WE_setC = 1;
+      2'b11: WE_setD = 1;
+    endcase
+
+  end     //konec fetchovani
+  else begin
+
+    WE_tag = 0;
+    WE_setA = 0;
+    WE_setB = 0;
+    WE_setC = 0;
+    WE_setD = 0;
+
+  end
+
+end
 
 
 always_comb begin
 
 //defaultni hodnoty
   MASK = 32'hffffffff;
-  WE_tag = 0;
-  WE_setA = 0;
-  WE_setB = 0;
-  WE_setC = 0;
-  WE_setD = 0;
 
   tagA_NEW[13:12] = tagA[13:12];
   tagB_NEW[13:12] = tagB[13:12];
@@ -350,13 +399,10 @@ always_comb begin
   if((state == 2'b01) && (cache_miss == 0)) begin
 
     MASK = 32'hffffffff;
-    WE_tag = 1;
 
   end
 //konec cteni dat
   else if(state == 2'b10) begin
-
-    WE_tag = 1;
 
     //nastaveni masky podle toho kolik Bytu zapisujeme
     if(store_size == 2'b00) begin   //zapisujeme 8 bitu, podle adresy je vybrano 8 bitu ktere budou v MASK nastaveny na 0
@@ -376,34 +422,25 @@ always_comb begin
     else if(store_size == 2'b11) MASK = 32'hffffffff;     //nelegalni operace, nezapisuje se, proto MASK = 32'hffffffff
     //nastaveni masky podle toho kolik Bytu zapisujeme
 
-    if(!cache_miss) begin
-      case(set_used)
-        2'b00: WE_setA = 1;
-        2'b01: WE_setB = 1;
-        2'b10: WE_setC = 1;
-        2'b11: WE_setD = 1;
-      endcase
-    end
-
     if(set_used == 2'b00) begin
       tagA_NEW[13] = 1;                   //valid bit == 1
       tagA_NEW[12] = 1;                   //dirt bit == 1
       tagA_NEW[9:0] = mem_addr_old[19:10];  //tag
     end
 
-    if(set_used == 2'b01) begin
+    else if(set_used == 2'b01) begin
       tagB_NEW[13] = 1;                   //valid bit == 1
       tagB_NEW[12] = 1;                   //dirt bit == 1
       tagB_NEW[9:0] = mem_addr_old[19:10];  //tag
     end
 
-    if(set_used == 2'b10) begin
+    else if(set_used == 2'b10) begin
       tagC_NEW[13] = 1;                   //valid bit == 1
       tagC_NEW[12] = 1;                   //dirt bit == 1
       tagC_NEW[9:0] = mem_addr_old[19:10];  //tag
     end
 
-    if(set_used == 2'b11) begin
+    else begin //if(set_used == 2'b11) begin
       tagD_NEW[13] = 1;                   //valid bit == 1
       tagD_NEW[12] = 1;                   //dirt bit == 1
       tagD_NEW[9:0] = mem_addr_old[19:10];  //tag
@@ -414,14 +451,6 @@ always_comb begin
   else if((state == 2'b11) && (fetch == 1)) begin
 
     MASK = 32'h00000000;
-    WE_tag = 1;
-
-    case(set_used)
-      2'b00: WE_setA = 1;
-      2'b01: WE_setB = 1;
-      2'b10: WE_setC = 1;
-      2'b11: WE_setD = 1;
-    endcase
 
     if(set_used == 2'b00) begin
       tagA_NEW[13] = 1;                   //valid bit == 1
@@ -429,19 +458,19 @@ always_comb begin
       tagA_NEW[9:0] = mem_addr_old[19:10];  //tag
     end
 
-    if(set_used == 2'b01) begin
+    else if(set_used == 2'b01) begin
       tagB_NEW[13] = 1;                   //valid bit == 1
       tagB_NEW[12] = 0;                   //dirt bit == 0
       tagB_NEW[9:0] = mem_addr_old[19:10];  //tag
     end
 
-    if(set_used == 2'b10) begin
+    else if(set_used == 2'b10) begin
       tagC_NEW[13] = 1;                   //valid bit == 1
       tagC_NEW[12] = 0;                   //dirt bit == 0
       tagC_NEW[9:0] = mem_addr_old[19:10];  //tag
     end
 
-    if(set_used == 2'b11) begin
+    else begin //if(set_used == 2'b11) begin
       tagD_NEW[13] = 1;                   //valid bit == 1
       tagD_NEW[12] = 0;                   //dirt bit == 0
       tagD_NEW[9:0] = mem_addr_old[19:10];  //tag
@@ -452,12 +481,6 @@ always_comb begin
   else begin
 
     MASK = 32'hffffffff;
-
-    WE_tag = 0;
-    WE_setA = 0;
-    WE_setB = 0;
-    WE_setC = 0;
-    WE_setD = 0;
 
     tagA_NEW[13] = 1;                   //dont care
     tagA_NEW[12] = 1;                   //dont care
