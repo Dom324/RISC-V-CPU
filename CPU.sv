@@ -5,9 +5,11 @@ module CPU(
 
   output logic hsync, vsync, VGA_pixel,
 
+  input logic [7:0] DIP_switch,
+
   //SPI rozhrani
   output logic SPI_CS, SPI_SCK, SPI_SI,
-  input logic SPI_SO
+  input logic SPI_SO,
 
   /*output flash_io0_oe,
 	output flash_io1_oe,
@@ -23,6 +25,8 @@ module CPU(
 	input flash_io1_di,
 	input flash_io2_di,
 	input logic flash_io3_di*/
+
+  input logic stall_debug
   );
 
   logic memory_enable, fetch_valid, mem_read_data_valid, mem_write_ready;
@@ -37,18 +41,31 @@ module CPU(
   logic [7:0] video_write_data;
   logic [10:0] video_write_addr;
 
+  logic [31:0] debug, debug_core, debug_mem;
+
   //logic [31:0] core_debug;
+
+  always_comb begin
+
+      if(DIP_switch[6]) debug = debug_core;
+      else debug = debug_mem;
+  end
 
 display_engine display_engine(
                               .CLK_CPU(CLK_CPU),
                               .CLK_VGA(CLK_VGA),
                               .resetn(resetn),
+
                               .video_write_enable(video_write_enable),
                               .video_write_data(video_write_data),
                               .video_write_addr(video_write_addr),
+
                               .VGA_pixel(VGA_pixel),
                               .hsync(hsync),
-                              .vsync(vsync)
+                              .vsync(vsync),
+
+                              .DIP_switch(DIP_switch),
+                              .debug(debug)
   );
 
   memory memory(
@@ -82,7 +99,7 @@ display_engine display_engine(
                 .SPI_CS(SPI_CS),
                 .SPI_SCK(SPI_SCK),
                 .SPI_SI(SPI_SI),
-                .SPI_SO(SPI_SO)
+                .SPI_SO(SPI_SO),
                 /*.flash_io0_oe(flash_io0_oe),
                 .flash_io1_oe(flash_io1_oe),
                 .flash_io2_oe(flash_io2_oe),
@@ -97,6 +114,9 @@ display_engine display_engine(
                 .flash_io1_di(flash_io1_di),
                 .flash_io2_di(flash_io2_di),
                 .flash_io3_di(flash_io3_di)*/
+
+                .DIP_switch(DIP_switch),
+                .debug(debug_mem)
                 );
 
 core core(
@@ -110,14 +130,17 @@ core core(
 
           .mem_read_data(mem_read_data),
           .mem_read_data_valid(mem_read_data_valid),
-          .memory_en(memory_enable),
 
+          .memory_en_out(memory_enable),
           .store_size(store_size),
           .mem_write_data(write_data),
           .mem_write_ready(mem_write_ready),
-          .mem_addr(mem_addr)
 
-          //.debug(core_debug)
+          .mem_addr(mem_addr),
+
+          .DIP_switch(DIP_switch),
+          .debug(debug_core),
+          .stall_debug(stall_debug)
           );
 
 keyboard keyboard(
