@@ -19,14 +19,14 @@ module TinyFPGA_BX (
 
 // Right side of board
   inout PIN_14,
-  inout PIN_15,
-  inout PIN_16,
-  inout PIN_17,
-  inout PIN_18,
-  inout PIN_19,
-  inout PIN_20,
-  inout PIN_21,
-  inout PIN_22,
+  inout PIN_15,     //DIP1
+  inout PIN_16,     //DIP2
+  inout PIN_17,     //DIP3
+  inout PIN_18,     //DIP4
+  inout PIN_19,     //DIP5
+  inout PIN_20,     //DIP6
+  inout PIN_21,     //DIP7
+  inout PIN_22,     //DIP8
   inout PIN_23,
   inout PIN_24,
 
@@ -67,7 +67,25 @@ module TinyFPGA_BX (
   assign PIN_10 = hsync;
   assign PIN_11 = vsync;
   assign PIN_14 = VGA_pixel;
-  assign PIN_15 = CLK_VGA;
+  assign PIN_8 = CLK_VGA;
+
+  logic [7:0] DIP_switch;
+
+  SB_IO #(
+    .PIN_TYPE(6'b 0000_01),
+    .PULLUP(1'b 1)
+  ) DIP_input [7:0](
+    .PACKAGE_PIN({PIN_15, PIN_16, PIN_17, PIN_18, PIN_19, PIN_20, PIN_21, PIN_22}),
+    .D_IN_0(DIP_switch)
+  );
+
+  SB_IO #(
+    .PIN_TYPE(6'b 0000_01),
+    .PULLUP(1'b 1)
+  ) button_input (
+    .PACKAGE_PIN(PIN_24),
+    .D_IN_0(debug_button)
+  );
 
   /*logic flash_io0_oe, flash_io1_oe, flash_io2_oe, flash_io3_oe,
         flash_io0_do, flash_io1_do, flash_io2_do, flash_io3_do,
@@ -79,6 +97,58 @@ module TinyFPGA_BX (
   logic res0, res1, res2;
   assign resetn = !resetp;
   assign resetp = !(res0 & res1 & res2);
+
+  logic sync_pipe1, sync_pipe2;
+  logic r_debug_button_state, r_DIP1_state;
+  logic r_last, r_debug_button_event;
+  logic o_debounced_debug_button, o_debounced_DIP1;
+  logic debug_button;
+
+
+always_ff @ (posedge CLK_CPU) begin
+	{ r_debug_button_state, sync_pipe1 }
+		<= { sync_pipe1, debug_button };         //tlacitko skrz dva flip flopy
+end
+
+
+always_ff @ (posedge CLK_CPU) begin
+	{ r_DIP1_state, sync_pipe2 }
+		<= { sync_pipe2, DIP_switch[7] };         //DIP1 skrz dva flip flopy
+end
+
+  logic [7:0] timer;
+  logic debug_button_prev;
+
+always_ff @ (posedge CLK_CPU) begin
+  debug_button_prev <= r_debug_button_state;
+
+	if(!resetn) timer <= 8'h02;
+  else begin
+    if(r_debug_button_state != debug_button_prev) timer <= 8'hff;
+    else timer <= timer - 1'b1;
+  end
+end
+
+always_ff @ (posedge CLK_CPU) begin
+	if (timer == 0) begin
+		o_debounced_debug_button <= r_debug_button_state;
+    o_debounced_DIP1 <= r_DIP1_state;
+  end
+end
+
+always_ff @ (posedge CLK_CPU) begin
+	r_last <= o_debounced_debug_button;
+	r_debug_button_event <= (!o_debounced_debug_button)&&(r_last);
+end
+
+  logic stall_debug;
+
+always_comb begin
+
+  if(o_debounced_DIP1) stall_debug = 0;
+  else stall_debug = !r_debug_button_event;
+
+end
 
 always_ff @ (posedge CLK_CPU, negedge pll_locked) begin
 
@@ -95,26 +165,16 @@ always_ff @ (posedge CLK_CPU, negedge pll_locked) begin
 
 end
 
-/*always_ff @ (posedge CLK_16mhz) begin
+always_ff @ (posedge CLK_16mhz) begin
 
   if(CLK_16mhz) clk_div <= clk_div + 1;
 
-  if(clk_div[1]) CLK_CPU <= 1;
+  if(clk_div[4]) CLK_CPU <= 1;
   else CLK_CPU <= 0;
 
-end*/
+end
 
-  assign CLK_CPU = CLK_16mhz;
-
-  /*SB_IO #(
-		.PIN_TYPE(6'b 1010_01),
-		.PULLUP(1'b 0)
-	) flash_io_buf [3:0] (
-		.PACKAGE_PIN({SPI_IO0, SPI_IO1, SPI_IO2, SPI_IO3}),
-		.OUTPUT_ENABLE({flash_io3_oe, flash_io2_oe, flash_io1_oe, flash_io0_oe}),
-		.D_OUT_0({flash_io3_do, flash_io2_do, flash_io1_do, flash_io0_do}),
-		.D_IN_0({flash_io3_di, flash_io2_di, flash_io1_di, flash_io0_di})
-	);*/
+  //assign CLK_CPU = CLK_16mhz;
 
   //PLL obvod generujici CLK pro VGA obvod, 40MHz
 pll CLK_VGA_PLL(
@@ -131,6 +191,7 @@ pll CLK_VGA_PLL(
                 .CLK_CPU(CLK_CPU),
                 .resetn(resetn),
                 .resetp(resetp),
+                .stall_debug(stall_debug),
 
                 .keyboard_data(keyboard_data),
                 .keyboard_clock(keyboard_clock),
@@ -138,6 +199,8 @@ pll CLK_VGA_PLL(
                 .hsync(hsync),
                 .vsync(vsync),
                 .VGA_pixel(VGA_pixel),
+
+                .DIP_switch(DIP_switch),
 
                 .SPI_CS(SPI_CS),      //SPI rozhrani
                 .SPI_SCK(SPI_CLK),    //SPI rozhrani

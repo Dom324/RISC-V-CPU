@@ -34,7 +34,7 @@ module spi_controller(
 
     //SPI rozhrani
     output logic SPI_CS, SPI_SCK, SPI_SI,
-    input logic SPI_SO
+    input logic SPI_SO,
 
     /*output flash_io0_oe,
   	output flash_io1_oe,
@@ -52,12 +52,13 @@ module spi_controller(
   	input  flash_io3_di,*/
     //SPI rozhrani
 
-    //output logic [31:0] word_debug      //debug
+    output logic [31:0] debug,      //debug
+    input logic [7:0] DIP_switch
 );
 
 localparam opcode = 8'h03;					//opcode na cteni dat
 localparam wakeup_op = 8'hAB;					//opcode na cteni dat
-localparam invert_endianess = 0;					//opcode na cteni dat
+localparam invert_endianess = 1;					//opcode na cteni dat
 
   logic [2:0] bit_counter;
   logic [1:0] byte_counter;
@@ -73,11 +74,23 @@ localparam invert_endianess = 0;					//opcode na cteni dat
   assign SPI_SCK = CLK;         //clock pro SPI sbernici
   assign SPI_CS = !busy;         //enable pin pro flash pamet
 
-  //assign word_debug = {flash_byte, 3'b000, receiving, 3'b000, startup, 3'b000, SPI_CS, 3'b000, SPI_SCK, 3'b000, SPI_SI, 3'b000, SPI_SO};
+
 
   //SPI_SI bit na vystupu
   decoder_3to8_inv output_select(bit_counter, flash_byte, SPI_SI);
   shift_reg #(32) SPI_buffer(SPI_SCK, receiving, SPI_SO, SPI_data_buffer);
+
+always_comb begin
+
+  case(DIP_switch[5:0])
+    5'b00001: debug = flash_addr;
+    5'b00010: debug = SPI_data;
+    5'b00011: debug = {flash_byte, 3'b000, receiving, 3'b000, startup, 3'b000, SPI_CS, 3'b000, SPI_SCK, 3'b000, SPI_SI, 3'b000, SPI_SO};
+    5'b00100: debug = {3'b000, icache_miss, 3'b000, dcache_miss, 3'b000, startup, 3'b000, busy, 16'h0000};
+    default: debug = 0;
+  endcase
+
+end
 
 always_comb begin
 
@@ -94,15 +107,15 @@ always_ff @ (negedge CLK) begin
 
   if(!busy) begin
 
-    if(dcache_miss == 1) flash_addr[19:0] <= dcache_addr + 19'h50000;
-    else if(icache_miss == 1) flash_addr[19:0] <= icache_addr + 19'h50000;
+    if(dcache_miss == 1) flash_addr[19:0] <= dcache_addr + 19'h51000;
+    else if(icache_miss == 1) flash_addr[19:0] <= icache_addr + 19'h51000;
     else flash_addr <= flash_addr;
 
   end
 
 end
 
-always_ff @ (negedge CLK, negedge resetn) begin
+always_ff @ (negedge CLK) begin
 
 
   if(!resetn) begin
@@ -170,7 +183,7 @@ end else begin
 end
 end
 
-always_ff @ (posedge CLK, negedge resetn) begin
+always_ff @ (posedge CLK) begin
 
 
   if(!resetn) begin
@@ -240,11 +253,13 @@ always_ff @ (negedge CLK) begin
   end
 end
 
-always_ff @ (posedge CLK, negedge resetn) begin
+always_ff @ (posedge CLK) begin
 
   if(!resetn) begin
 
     receiving <= 0;
+    bits_received <= 0;
+    SPI_data_ready <= 0;
 
   end
   else begin

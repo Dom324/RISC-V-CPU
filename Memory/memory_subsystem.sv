@@ -39,7 +39,7 @@ module memory(
 
     //SPI rozhrani
     output logic SPI_CS, SPI_SCK, SPI_SI,
-    input logic SPI_SO
+    input logic SPI_SO,
 
     /*output flash_io0_oe,
   	output flash_io1_oe,
@@ -55,6 +55,9 @@ module memory(
   	input  flash_io1_di,
   	input  flash_io2_di,
   	input logic flash_io3_di*/
+
+    input logic [7:0] DIP_switch,
+    output logic [31:0] debug
 );
 
   logic dcache_miss;
@@ -70,12 +73,21 @@ module memory(
 
   logic [1:0] d_i_mode;
 
+  logic [31:0] debug_SPI, debug_icache;
+
   //logic [1:0] icache_debug;
   //assign dcache_miss = 0;
   //assign dcache_stall = 0;
 
   assign video_write_data = write_data[7:0];
   assign video_write_addr = mem_addr[10:0];
+
+always_comb begin
+
+  if(DIP_switch[5]) debug = debug_icache;
+  else debug = debug_SPI;
+
+end
 
 always_comb begin
 
@@ -188,7 +200,8 @@ spi_controller SPI_Flash(
                         .SPI_CS(SPI_CS),
                         .SPI_SCK(SPI_SCK),
                         .SPI_SI(SPI_SI),
-                        .SPI_SO(SPI_SO)
+                        .SPI_SO(SPI_SO),
+
                         /*.flash_io0_oe(flash_io0_oe),
                         .flash_io1_oe(flash_io1_oe),
                         .flash_io2_oe(flash_io2_oe),
@@ -203,7 +216,9 @@ spi_controller SPI_Flash(
                         .flash_io1_di(flash_io1_di),
                         .flash_io2_di(flash_io2_di),
                         .flash_io3_di(flash_io3_di),*/
-                        //.word_debug(word_debug)
+
+                        .DIP_switch(DIP_switch),
+                        .debug(debug_SPI)
   );
 
 
@@ -236,8 +251,10 @@ dcache L1D(
             .cache_miss(icache_miss),
             .read_addr(nextPC[19:0]),
             .write_data(SPI_data),
-            .RDATA_OUT(icache_read_data)
-            //.debug(icache_debug)
+            .RDATA_OUT(icache_read_data),
+
+            .debug(debug_icache),
+            .DIP_switch(DIP_switch)
     );
 
 endmodule
