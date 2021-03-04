@@ -49,6 +49,9 @@ module CPU(
 
       if(DIP_switch[6]) debug = debug_core;
       else debug = debug_mem;
+
+      //debug = debug_core;
+
   end
 
 display_engine display_engine(
@@ -86,7 +89,7 @@ display_engine display_engine(
 
                 .mem_addr(mem_addr),
                 .write_data(write_data),
-                .dcache_write_ready(mem_write_ready),
+                .write_ready(mem_write_ready),
 
                 .mem_read_data(mem_read_data),
                 .read_data_valid(mem_read_data_valid),
