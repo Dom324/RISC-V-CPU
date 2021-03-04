@@ -2,12 +2,24 @@ module regfile(
   input logic clk, we,
   input logic  [31:0] wd,
   input logic [4:0] wa, ra1, ra2,
-  output logic [31:0] rd1, rd2
+  output logic [31:0] rd1, rd2,
+  input logic new_instr,
+  output logic stall_from_reg,
+  output logic [31:0] reg_rd1, reg_rd2
 );
 
-  logic [31:0] registers [31:0];			//32x32 bits wide registers
+  //logic [31:0] registers [31:0];			//32x32 bits wide registers
 
-  assign rd1 = registers[ra1];
+  //logic [31:0] reg_rd1, reg_rd2;
+
+always_comb begin
+
+  if(new_instr) stall_from_reg = 1;
+  else stall_from_reg = 0;
+
+end
+
+  /*assign rd1 = registers[ra1];
   assign rd2 = registers[ra2];
 
 always_ff @ (posedge clk) begin
@@ -18,5 +30,43 @@ always_ff @ (posedge clk) begin
 	  else
 	    registers[0] <= 0;
 
+end*/
+
+always_comb begin
+
+  if(ra1 == 5'b00000) rd1 = 0;
+  else rd1 = reg_rd1;
+
+  if(ra2 == 5'b00000) rd2 = 0;
+  else rd2 = reg_rd2;
+
 end
+
+RAM256x32 regfile1(.RCLK_c(clk),
+                      .RCLKE_c(1),
+                      .RE_c(1),
+                      .WCLK_c(clk),
+                      .WCLKE_c(1),
+                      .WE_c(we),
+                      .RADDR_c({3'b000, ra1}),
+                      .WADDR_c({3'b000, wa}),
+                      .MASK_IN(0),
+                      .WDATA_IN(wd),
+                      .RDATA_OUT(reg_rd1)
+                      );
+
+RAM256x32 regfile2(.RCLK_c(clk),
+                      .RCLKE_c(1),
+                      .RE_c(1),
+                      .WCLK_c(clk),
+                      .WCLKE_c(1),
+                      .WE_c(we),
+                      .RADDR_c({3'b000, ra2}),
+                      .WADDR_c({3'b000, wa}),
+                      .MASK_IN(0),
+                      .WDATA_IN(wd),
+                      .RDATA_OUT(reg_rd2)
+                      );
+
+
 endmodule
