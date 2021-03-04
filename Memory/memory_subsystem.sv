@@ -22,7 +22,7 @@ module memory(
     input logic mem_en, fetch_enable,
     input logic [1:0] store_size,
     input logic [31:0] nextPC, mem_addr, write_data,
-    output logic fetch_valid, read_data_valid, dcache_write_ready,
+    output logic fetch_valid, read_data_valid, write_ready,
     output logic [31:0] instr_fetch, mem_read_data,
 
     //klavesnice
@@ -60,7 +60,7 @@ module memory(
     output logic [31:0] debug
 );
 
-  logic dcache_miss;
+  logic dcache_miss, dcache_write_ready;
   logic dcache_read_en, dcache_write_en, dcache_fetch, dcache_read_data_valid;
   logic [31:0] dcache_write_data, dcache_read_data;
 
@@ -101,6 +101,7 @@ mem_read_data = 0;
 dcache_read_en = 0;
 dcache_write_en = 0;
 read_data_valid = 0;
+write_ready = 0;
 //defaultni hodnoty
 
 
@@ -111,6 +112,7 @@ read_data_valid = 0;
 
       mem_read_data = dcache_read_data;
       read_data_valid = dcache_read_data_valid;
+      write_ready = dcache_write_ready;
 
       case(store_size)
         2'b11: begin                  //cte se z pameti
@@ -134,6 +136,7 @@ read_data_valid = 0;
     else if( (mem_addr[31:12] == 20'hF0000) && (store_size == 2'b00)) begin       //zapisuje se do videopameti
 
         video_write_enable = 1;
+        write_ready = 1;
 
     end
     else if( (mem_addr == 32'hFFFFFFFF) && (store_size == 2'b11)) begin
