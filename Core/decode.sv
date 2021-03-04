@@ -42,7 +42,7 @@ always_comb begin
     default: unknown_instr = 1;
 
   endcase
-  
+
 end
 
 always_comb begin
@@ -93,7 +93,11 @@ aluOp = funct3;
 	    instrType = 3'b011;
 
       rd = 5'b00000;
-	    funct7 = 7'b0000000;
+      funct7 = 7'b0000000;
+
+      if(funct3 == 3'b001) aluOp = 3'b000;
+      else aluOp = instr[14:12];
+
     end
 
     7'b1100111, 7'b0000011, 7'b0010011, 7'b0001111, 7'b1110011: begin		//I-type instruction
