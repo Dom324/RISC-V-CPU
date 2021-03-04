@@ -16,7 +16,7 @@ module core(
   input logic stall_debug
 );
 
-  logic [31:0] instr_fetch_exec;
+  logic [31:0] instr_fetch_exec, reg_rd1, reg_rd2;
 
   logic [31:0] PCmux, PCplus4, wd, rd1, rd2, aluB, aluA, imm, memData, aluRes;
   logic [31:0] nextPC, PC;
@@ -28,8 +28,11 @@ module core(
   logic we_reg, we_reg_controller, pcControl, aluBsel, aluAsel;
   logic [1:0] wdSelect;
 
-  logic jump, decoder_stall, memory_en, fetch_valid_exec;
-  logic stall_pc;
+  logic decoder_stall, memory_en, fetch_valid_exec;
+  logic stall_pc, new_instr, stall_from_reg;
+
+  logic branch_taken, we_reg_buff;
+  logic jump, branch;
 
   //assign debug = {3'b000, stall_pc, instr_fetch[27:0]};
 
@@ -41,9 +44,20 @@ always_comb begin
     7'b1000000: debug = PC;
     7'b1000001: debug = nextPC;
     7'b1000010: debug = instr_fetch_exec;
-    7'b1000011: debug = {3'b000, stall_pc, 3'b000, fetch_valid_exec, 3'b000, decoder_stall, 3'b000, stall_debug, 16'b00000000000000000000};
+    7'b1000011: debug = {3'b000, stall_pc, 3'b000, fetch_valid_exec, 3'b000, decoder_stall,
+    3'b000, stall_debug, 3'b000, resetn, 3'b000, mem_write_ready, 3'b000, we_reg,  3'b000, we_reg_buff};
     7'b1000100: debug = aluRes;
     7'b1000101: debug = memData;
+    7'b1000110: debug = mem_write_data;
+    7'b1000111: debug = aluA;
+    7'b1001000: debug = aluB;
+    7'b1001001: debug = rd1;
+    7'b1001010: debug = rd2;
+    7'b1001011: debug = {rs1, rs2, 22'h00000000};
+    7'b1001100: debug = reg_rd1;
+    7'b1001101: debug = reg_rd2;
+    7'b1001110: debug = {1'b0, aluOp, 1'b0, funct3, 1'b0, funct7, 3'b000, branch_taken, 12'h000};
+    7'b1001111: debug = PCmux;
     default: debug = PC;
   endcase
 
@@ -63,10 +77,11 @@ end
       .aluBsel,
       .wdSelect,
       .store_size,
-      .jump
+      .jump,
+      .branch
     );
 
-  regfile regfile(CLK, we_reg, wd, rd, rs1, rs2, rd1, rd2);
+  regfile regfile(CLK, we_reg, wd, rd, rs1, rs2, rd1, rd2, new_instr, stall_from_reg, reg_rd1, reg_rd2);
 
   main_controller main_controller(
     .CLK,
@@ -83,8 +98,20 @@ end
     .we_reg,
     .fetch_valid_exec,
     .stall_pc,
-    .stall_debug(stall_debug)
+    .stall_debug(stall_debug),
+    .new_instr(new_instr),
+    .stall_from_reg(stall_from_reg),
+    .we_reg_buff,
+    .branch,
+    .jump
     );
+
+    branch_unit branch_unit(
+      .rd1(rd1),
+      .rd2(rd2),
+      .funct3,
+      .branch_taken(branch_taken)
+      );
 
 always_comb begin
 
@@ -117,7 +144,23 @@ end
   //logika PC
   assign PCplus4 = PC + 4;
 
-  mux2 #(32) pcSelect(pcControl, PCplus4, aluRes, PCmux);
+  //mux2 #(32) pcSelect(pcControl, PCplus4, {PC + imm}, PCmux);
+
+always_comb begin
+
+  if(pcControl) begin
+
+    if(jump) PCmux = aluRes;
+
+    else begin
+      if(branch_taken) PCmux = aluRes;
+      else PCmux = PCplus4;
+    end
+
+  end
+  else PCmux = PCplus4;
+
+end
 
   //assign PCfetch = nextPC + 16'h1000;
   assign PCfetch = nextPC;
