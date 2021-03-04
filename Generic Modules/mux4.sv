@@ -17,5 +17,6 @@ out = 0;
       default: out = 0;
 
     endcase
+
   end
 endmodule
