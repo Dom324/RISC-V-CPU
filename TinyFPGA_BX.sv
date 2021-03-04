@@ -105,6 +105,87 @@ module TinyFPGA_BX (
   logic debug_button;
 
 
+/*always_ff @ (posedge clk_div[6]) begin
+	{ r_debug_button_state, sync_pipe1 }
+		<= { sync_pipe1, debug_button };         //tlacitko skrz dva flip flopy
+end
+
+
+always_ff @ (posedge clk_div[6]) begin
+	{ r_DIP1_state, sync_pipe2 }
+		<= { sync_pipe2, DIP_switch[7] };         //DIP1 skrz dva flip flopy
+end
+
+  logic [7:0] timer;
+  logic debug_button_prev;
+
+always_ff @ (posedge clk_div[6]) begin
+  debug_button_prev <= r_debug_button_state;
+
+	if(!resetn) timer <= 8'h02;
+  else begin
+    if(r_debug_button_state != debug_button_prev) timer <= 8'hff;
+    else timer <= timer - 1'b1;
+  end
+end
+
+always_ff @ (posedge clk_div[6]) begin
+	if (timer == 0) begin
+		o_debounced_debug_button <= r_debug_button_state;
+    o_debounced_DIP1 <= r_DIP1_state;
+  end
+end
+
+always_ff @ (posedge clk_div[6]) begin
+	r_last <= o_debounced_debug_button;
+	r_debug_button_event <= (!o_debounced_debug_button)&&(r_last);
+end
+
+  logic stall_debug;
+
+always_comb begin
+
+  stall_debug = 0;
+
+end
+
+always_ff @ (posedge clk_div[6], negedge pll_locked) begin
+
+  if(!pll_locked) begin
+    res0 <= 0;
+    res1 <= 0;
+    res2 <= 0;
+  end
+  else if(clk_div[6]) begin
+    res0 <= pll_locked;
+    res1 <= res0;
+    res2 <= res1;
+  end
+
+end
+
+always_ff @ (posedge CLK_16mhz) begin
+
+  if(CLK_16mhz) clk_div <= clk_div + 1;
+
+  if(!resetn) begin
+
+    if(clk_div[6]) CLK_CPU <= 1;
+    else CLK_CPU <= 0;
+
+  end
+  else begin
+
+    CLK_CPU <= r_debug_button_event;
+
+  end
+
+
+
+
+end*/
+
+
 always_ff @ (posedge CLK_CPU) begin
 	{ r_debug_button_state, sync_pipe1 }
 		<= { sync_pipe1, debug_button };         //tlacitko skrz dva flip flopy
@@ -116,15 +197,15 @@ always_ff @ (posedge CLK_CPU) begin
 		<= { sync_pipe2, DIP_switch[7] };         //DIP1 skrz dva flip flopy
 end
 
-  logic [7:0] timer;
+  logic [13:0] timer;
   logic debug_button_prev;
 
 always_ff @ (posedge CLK_CPU) begin
   debug_button_prev <= r_debug_button_state;
 
-	if(!resetn) timer <= 8'h02;
+	if(!resetn) timer <= 14'h0002;
   else begin
-    if(r_debug_button_state != debug_button_prev) timer <= 8'hff;
+    if(r_debug_button_state != debug_button_prev) timer <= 14'h3fff;
     else timer <= timer - 1'b1;
   end
 end
@@ -165,16 +246,17 @@ always_ff @ (posedge CLK_CPU, negedge pll_locked) begin
 
 end
 
-always_ff @ (posedge CLK_16mhz) begin
+/*always_ff @ (posedge CLK_16mhz) begin
 
   if(CLK_16mhz) clk_div <= clk_div + 1;
 
-  if(clk_div[4]) CLK_CPU <= 1;
+  if(clk_div[6]) CLK_CPU <= 1;
   else CLK_CPU <= 0;
 
-end
+end*/
 
-  //assign CLK_CPU = CLK_16mhz;
+  assign CLK_CPU = CLK_16mhz;
+
 
   //PLL obvod generujici CLK pro VGA obvod, 40MHz
 pll CLK_VGA_PLL(
