@@ -9,7 +9,9 @@ module controller(
          aluAsel,     //prepina jestli aluA vstup je reg (1) nebo pc (0)
   output logic [1:0] wdSelect,	//co za data se bude zapisovat do registru - "00" vysledek z ALU, "01" data z pameti, "10" PCplus4 (pouziva se pro ukladani navratovych adres), "11" imm (konstanta)
 			   store_size,		//kolik Bytu se bude zapisovat do pameti - "00" jeden Byte, "01" dva Byty, "10" ctyri Byty, "11" instrukce nezapisuje data ale cte je (LOAD instrukce)
-  output logic jump
+
+  output logic jump,
+  output logic branch
 );
 
 always_comb begin
@@ -23,6 +25,7 @@ aluAsel = 1'b1;
 memory_en = 1'b0;
 store_size = 2'b11;
 jump = 0;
+branch = 0;
 //defaultni hodnoty
 
   case(instrType)
@@ -55,19 +58,22 @@ jump = 0;
 	    aluBsel = 1'b0;
 	    memory_en = 1'b0;
 	    store_size = 2'b11;
-      aluAsel = 0;
-      jump = 1;
+      aluAsel = 1'b0;
+      jump = 1'b1;
 
     end
 
     3'b011: begin			//B-type instruction
 
+      branch = 1;
+
 	    we_reg = 0;
-	    pcControl = 1;
 	    wdSelect = 2'b10;
-	    aluBsel = 1'b0;
 	    memory_en = 1'b0;
 	    store_size = 2'b11;
+      pcControl = 1'b1;
+      aluAsel = 1'b0;
+      aluBsel = 1'b0;
 
     end
 
@@ -99,6 +105,8 @@ jump = 0;
           we_reg = 1;
           wdSelect = 2'b00;
           memory_en = 1'b0;
+          aluBsel = 1'b0;
+          aluAsel = 1'b1;
       end
     end
 
@@ -123,7 +131,8 @@ jump = 0;
 
 	    pcControl = 0;
 	    wdSelect = 2'b00;
-	    aluBsel = 1'b0;
+	    aluBsel = 1'b1;
+      aluAsel = 1'b1;
 	    memory_en = 1'b0;
 	    store_size = 2'b11;
 
