@@ -139,7 +139,7 @@ AT25SF081 flash(SPI_SCK, SPI_SS, SPI_SI, SPI_IO3, SPI_IO2, SPI_SO);
                 .SPI_CS(SPI_SS),      //SPI rozhrani
                 .SPI_SCK(SPI_SCK),    //SPI rozhrani
                 .SPI_SI(SPI_SI),
-                .SPI_SO(SPI_SO)
+                .SPI_SO(SPI_SO),
                 /*.flash_io0_oe(flash_io0_oe),
                 .flash_io1_oe(flash_io1_oe),
                 .flash_io2_oe(flash_io2_oe),
@@ -154,6 +154,8 @@ AT25SF081 flash(SPI_SCK, SPI_SS, SPI_SI, SPI_IO3, SPI_IO2, SPI_SO);
                 .flash_io1_di(flash_io1_di),
                 .flash_io2_di(flash_io2_di),
                 .flash_io3_di(flash_io3_di)*/
+
+                .stall_debug(0)
                 );
 
 
