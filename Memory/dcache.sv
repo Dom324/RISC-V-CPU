@@ -149,18 +149,51 @@ end
 
 always_comb begin
 
+  RADDR_TAG = 8'h00;
+  RADDR_CACHE = 8'h00;
+  WADDR_CACHE = 8'h00;
+  WADDR_TAG = 8'h00;
+
+  if(nextState == 2'b01) begin
+
+    RADDR_CACHE = mem_addr[9:2];
+    RADDR_TAG = mem_addr[9:2];
+
+  end
+  else if(nextState == 2'b10) begin
+
+    RADDR_CACHE = mem_addr[9:2];    //write
+    RADDR_TAG = mem_addr[9:2];     //read
+    WADDR_CACHE = mem_addr_old[9:2];    //write
+    WADDR_TAG = mem_addr_old[9:2];    //write
+
+  end
+  else if(nextState == 2'b11) begin
+
+    RADDR_CACHE = mem_addr_old[9:2];    //write
+    RADDR_TAG = mem_addr_old[9:2];     //read
+    WADDR_CACHE = mem_addr_old[9:2];    //write
+    WADDR_TAG = mem_addr_old[9:2];    //write
+
+  end
+
+
+end
+
+always_comb begin
+
 //defaultni hodnoty
 cache_miss = 0;
 RDATA_OUT = 0;      //dont care
 RDATA_valid = 0;
-set_used = 0;       //dont care
+set_used = 2'b00;       //dont care
 write_ready = 0;
 write_data = write_data_from_cpu;
 //defaultni hodnoty
 
-  case(state)
+  /*case(state)
     2'b00: RADDR_TAG = mem_addr[9:2];
-    2'b01: RADDR_TAG = mem_addr_old[9:2];     //read
+    2'b01: RADDR_TAG = mem_addr_old[9:2];    //read
     2'b10: RADDR_TAG = mem_addr_old[9:2];    //write
     2'b11: RADDR_TAG = mem_addr_old[9:2];
     default: RADDR_TAG = 0;
@@ -169,21 +202,21 @@ write_data = write_data_from_cpu;
   WADDR_TAG = RADDR_TAG;
 
   case(state)
-    2'b00: RADDR_CACHE = mem_addr[9:2];                  //dont care
-    2'b01: RADDR_CACHE = mem_addr_old[9:2];     //read
+    2'b00: RADDR_CACHE = mem_addr[9:2];        //dont care
+    2'b01: RADDR_CACHE = mem_addr_old[9:2];    //read
     2'b10: RADDR_CACHE = mem_addr_old[9:2];    //write
-    2'b11: RADDR_CACHE = mem_addr_old[9:2];     //fetch read
+    2'b11: RADDR_CACHE = mem_addr_old[9:2];    //fetch read
     default: RADDR_CACHE = 0;
   endcase
 
 
   case(state)
     2'b00: WADDR_CACHE = 0;                  //dont care
-    2'b01: WADDR_CACHE = 0;     //read
-    2'b10: WADDR_CACHE = mem_addr_old[9:2];    //write
+    2'b01: WADDR_CACHE = 0;                  //read
+    2'b10: WADDR_CACHE = mem_addr_old[9:2];  //write
     2'b11: WADDR_CACHE = mem_addr_old[9:2];
     default: WADDR_CACHE = 0;
-  endcase
+  endcase*/
 
 
   case(state)
@@ -594,10 +627,10 @@ always_comb begin
 end
 
 RAM256x32 dcache_setA(.RCLK_c(CLK),
-                      .RCLKE_c(read_en),
+                      .RCLKE_c(1),
                       .RE_c(read_en),
                       .WCLK_c(CLK),
-                      .WCLKE_c(WE_setA),
+                      .WCLKE_c(1),
                       .WE_c(WE_setA),
                       .RADDR_c(RADDR_CACHE),
                       .WADDR_c(WADDR_CACHE),
@@ -607,10 +640,10 @@ RAM256x32 dcache_setA(.RCLK_c(CLK),
                       );
 
 RAM256x16 dcache_tagA(.RCLK_c(CLK),
-                      .RCLKE_c(read_en || write_en || fetch),
+                      .RCLKE_c(1),
                       .RE_c(read_en || write_en || fetch),
                       .WCLK_c(CLK),
-                      .WCLKE_c(WE_tag),
+                      .WCLKE_c(1),
                       .WE_c(WE_tag),
                       .RADDR_c(RADDR_TAG),
                       .WADDR_c(WADDR_TAG),
@@ -620,10 +653,10 @@ RAM256x16 dcache_tagA(.RCLK_c(CLK),
                       );
 
 RAM256x32 dcache_setB(.RCLK_c(CLK),
-                      .RCLKE_c(read_en),
+                      .RCLKE_c(1),
                       .RE_c(read_en),
                       .WCLK_c(CLK),
-                      .WCLKE_c(WE_setB),
+                      .WCLKE_c(1),
                       .WE_c(WE_setB),
                       .RADDR_c(RADDR_CACHE),
                       .WADDR_c(WADDR_CACHE),
@@ -633,10 +666,10 @@ RAM256x32 dcache_setB(.RCLK_c(CLK),
                       );
 
 RAM256x16 dcache_tagB(.RCLK_c(CLK),
-                      .RCLKE_c(read_en || write_en || fetch),
+                      .RCLKE_c(1),
                       .RE_c(read_en || write_en || fetch),
                       .WCLK_c(CLK),
-                      .WCLKE_c(WE_tag),
+                      .WCLKE_c(1),
                       .WE_c(WE_tag),
                       .RADDR_c(RADDR_TAG),
                       .WADDR_c(WADDR_TAG),
@@ -646,10 +679,10 @@ RAM256x16 dcache_tagB(.RCLK_c(CLK),
                       );
 
 RAM256x32 dcache_setC(.RCLK_c(CLK),
-                      .RCLKE_c(read_en),
+                      .RCLKE_c(1),
                       .RE_c(read_en),
                       .WCLK_c(CLK),
-                      .WCLKE_c(WE_setC),
+                      .WCLKE_c(1),
                       .WE_c(WE_setC),
                       .RADDR_c(RADDR_CACHE),
                       .WADDR_c(WADDR_CACHE),
@@ -659,10 +692,10 @@ RAM256x32 dcache_setC(.RCLK_c(CLK),
                       );
 
 RAM256x16 dcache_tagC(.RCLK_c(CLK),
-                      .RCLKE_c(read_en || write_en || fetch),
+                      .RCLKE_c(1),
                       .RE_c(read_en || write_en || fetch),
                       .WCLK_c(CLK),
-                      .WCLKE_c(WE_tag),
+                      .WCLKE_c(1),
                       .WE_c(WE_tag),
                       .RADDR_c(RADDR_TAG),
                       .WADDR_c(WADDR_TAG),
@@ -672,10 +705,10 @@ RAM256x16 dcache_tagC(.RCLK_c(CLK),
                       );
 
 RAM256x32 dcache_setD(.RCLK_c(CLK),
-                      .RCLKE_c(read_en),
+                      .RCLKE_c(1),
                       .RE_c(read_en),
                       .WCLK_c(CLK),
-                      .WCLKE_c(WE_setD),
+                      .WCLKE_c(1),
                       .WE_c(WE_setD),
                       .RADDR_c(RADDR_CACHE),
                       .WADDR_c(WADDR_CACHE),
@@ -685,10 +718,10 @@ RAM256x32 dcache_setD(.RCLK_c(CLK),
                       );
 
 RAM256x16 dcache_tagD(.RCLK_c(CLK),
-                      .RCLKE_c(read_en || write_en || fetch),
+                      .RCLKE_c(1),
                       .RE_c(read_en || write_en || fetch),
                       .WCLK_c(CLK),
-                      .WCLKE_c(WE_tag),
+                      .WCLKE_c(1),
                       .WE_c(WE_tag),
                       .RADDR_c(RADDR_TAG),
                       .WADDR_c(WADDR_TAG),

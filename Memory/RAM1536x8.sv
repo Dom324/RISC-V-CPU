@@ -20,6 +20,7 @@ always_comb begin
   RDATA_OUT = 0;
 
   if(RE == 1) begin
+
     if(RADDR[10:9] == 2'b00) begin      //cte se z bank0
       RE_bank0 = 1;
       RE_bank1 = 0;
@@ -44,6 +45,7 @@ always_comb begin
       RE_bank2 = 0;
       RDATA_OUT = 0;
     end
+
   end
   else begin
     RE_bank0 = 0;
@@ -60,6 +62,7 @@ WE_bank1 = 0;
 WE_bank2 = 0;
 
   if(WE == 1) begin
+
     if(WADDR[10:9] == 2'b00) begin      //cte se z bank0
       WE_bank0 = 1;
     end
@@ -74,6 +77,7 @@ WE_bank2 = 0;
       WE_bank1 = 0;
       WE_bank2 = 0;
     end
+
   end
 
 end
@@ -82,11 +86,11 @@ SB_RAM512x8 ram512X8_inst1 (
 .RDATA(RDATA_bank0[7:0]),
 .RADDR(RADDR[8:0]),
 .RCLK(RCLK),
-.RCLKE(RE_bank0),
+.RCLKE(1),
 .RE(RE_bank0),
 .WADDR(WADDR[8:0]),
 .WCLK(WCLK),
-.WCLKE(WE_bank0),
+.WCLKE(1),
 .WDATA(WDATA[7:0]),
 .WE(WE_bank0)
 );
@@ -95,11 +99,11 @@ SB_RAM512x8 ram512X8_inst2 (
 .RDATA(RDATA_bank1[7:0]),
 .RADDR(RADDR[8:0]),
 .RCLK(RCLK),
-.RCLKE(RE_bank1),
+.RCLKE(1),
 .RE(RE_bank1),
 .WADDR(WADDR[8:0]),
 .WCLK(WCLK),
-.WCLKE(WE_bank1),
+.WCLKE(1),
 .WDATA(WDATA[7:0]),
 .WE(WE_bank1)
 );
@@ -108,11 +112,11 @@ SB_RAM512x8 ram512X8_inst3 (
 .RDATA(RDATA_bank2[7:0]),
 .RADDR(RADDR[8:0]),
 .RCLK(RCLK),
-.RCLKE(RE_bank2),
+.RCLKE(1),
 .RE(RE_bank2),
 .WADDR(WADDR[8:0]),
 .WCLK(WCLK),
-.WCLKE(WE_bank2),
+.WCLKE(1),
 .WDATA(WDATA[7:0]),
 .WE(WE_bank2)
 );
