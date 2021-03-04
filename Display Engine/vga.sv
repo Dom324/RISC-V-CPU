@@ -37,7 +37,7 @@ localparam horizontal = 800;			//sirka obrazu v pixelech
 localparam vertical = 600;				//vyska obrazu v pixelech
 localparam h_fp = 40;					//horizontalni front porch
 localparam h_sw = 128;					//horizontalni sync width
-localparam h_bp = 90;					//horizontalni back porch
+localparam h_bp = 88;					//horizontalni back porch
 localparam v_fp = 1;					//vertikalni front porch
 localparam v_sw = 4;					//vertikalni sync width
 localparam v_bp = 23;					//vertikalni back porch
@@ -91,13 +91,13 @@ end
 always_comb begin
 
   //nastaveni v_sync signalu
-  if( (vertical_line < vertical + v_fp - 1) || (vertical_line >= vertical + v_fp + v_sw - 1) )
+  if( (vertical_line < vertical + v_fp) || (vertical_line > vertical + v_fp + v_sw) )
     v_sync = 1;
   else
     v_sync = 0;
 
   //nastaveni h_sync signalu
-  if( (horizontal_line < horizontal + h_fp - 1) || (horizontal_line >= horizontal + h_fp + h_sw - 1) )
+  if( (horizontal_line < horizontal + h_fp) || (horizontal_line > horizontal + h_fp + h_sw) )
     h_sync = 1;
   else
     h_sync = 0;
@@ -122,30 +122,19 @@ always_ff @ (posedge CLK_VGA) begin
 
 end
 
-always_ff @ (posedge CLK_VGA) begin
+always_comb begin
 
-  if( (horizontal_line <= horizontal) && (vertical_line <= vertical) ) begin		//jestli mame tisknout obraz
+  counter = horizontal_line[3:0] - 4'b0010;
+  //counter = horizontal_line[3:0];
 
-	  if(counter == 15) begin
-      counter <= 0;
-    end
-  	else begin
-      counter <= counter + 1;
-    end
-
-  end
-  
-
-  if(horizontal_line == horizontal + h_fp + h_sw + h_bp - 1) begin		//jestli jsme na konci radku, end_of_line == 1
-    counter <= 0;
-  end
-
-  //end
 end
 
 always_comb begin
 
-  if( (horizontal_line <= horizontal) && (vertical_line <= vertical) ) begin		//jestli mame tisknout obraz
+  newData = 0;
+  pixel = 0;
+
+  if( (horizontal_line < horizontal) && (vertical_line < vertical) ) begin		//jestli mame tisknout obraz
 
     pixel = data_selected;
 
