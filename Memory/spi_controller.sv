@@ -86,7 +86,7 @@ always_comb begin
     5'b00001: debug = {12'h000, flash_addr};
     5'b00010: debug = SPI_data;
     5'b00011: debug = {flash_byte, 3'b000, receiving, 3'b000, startup, 3'b000, SPI_CS, 3'b000, SPI_SCK, 3'b000, SPI_SI, 3'b000, SPI_SO};
-    5'b00100: debug = {3'b000, icache_miss, 3'b000, dcache_miss, 3'b000, startup, 3'b000, busy, 11'h0000, bits_received};
+    5'b00100: debug = {3'b000, icache_miss, 3'b000, dcache_miss, 3'b000, startup, 3'b000, busy, 11'h000, bits_received};
     default: debug = 0;
   endcase
 

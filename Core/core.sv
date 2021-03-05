@@ -53,7 +53,7 @@ always_comb begin
     7'b1001000: debug = aluB;
     7'b1001001: debug = rd1;
     7'b1001010: debug = rd2;
-    7'b1001011: debug = {rs1, rs2, 22'h00000000};
+    7'b1001011: debug = {rs1, rs2, 22'h000000};
     7'b1001100: debug = reg_rd1;
     7'b1001101: debug = reg_rd2;
     7'b1001110: debug = {1'b0, aluOp, 1'b0, funct3, 1'b0, funct7, 3'b000, branch_taken, 12'h000};
