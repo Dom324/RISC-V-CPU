@@ -31,12 +31,14 @@ module core(
   logic decoder_stall, memory_en, fetch_valid_exec;
   logic stall_pc, new_instr, stall_from_reg;
 
-  logic branch_taken, we_reg_buff;
+  logic branch_taken;
   logic jump, branch;
+
+  logic aluA_rdy, aluB_rdy, rd1_rdy, rd2_rdy, aluRes_rdy;
 
   //assign debug = {3'b000, stall_pc, instr_fetch[27:0]};
 
-  assign memory_en_out = memory_en & fetch_valid_exec;
+  assign memory_en_out = memory_en & fetch_valid_exec & aluRes_rdy;
 
 always_comb begin
 
@@ -45,7 +47,7 @@ always_comb begin
     7'b1000001: debug = nextPC;
     7'b1000010: debug = instr_fetch_exec;
     7'b1000011: debug = {3'b000, stall_pc, 3'b000, fetch_valid_exec, 3'b000, decoder_stall,
-    3'b000, stall_debug, 3'b000, resetn, 3'b000, mem_write_ready, 3'b000, we_reg,  3'b000, we_reg_buff};
+    3'b000, stall_debug, 3'b000, resetn, 3'b000, mem_write_ready, 3'b000, we_reg,  4'b0000};
     7'b1000100: debug = aluRes;
     7'b1000101: debug = memData;
     7'b1000110: debug = mem_write_data;
@@ -81,7 +83,7 @@ end
       .branch
     );
 
-  regfile regfile(CLK, we_reg, wd, rd, rs1, rs2, rd1, rd2, new_instr, stall_from_reg, reg_rd1, reg_rd2);
+  regfile regfile(CLK, we_reg, wd, rd, rs1, rs2, rd1, rd2, new_instr, reg_rd1, reg_rd2, rd1_rdy, rd2_rdy);
 
   main_controller main_controller(
     .CLK,
@@ -100,10 +102,9 @@ end
     .stall_pc,
     .stall_debug(stall_debug),
     .new_instr(new_instr),
-    .stall_from_reg(stall_from_reg),
-    .we_reg_buff,
     .branch,
-    .jump
+    .jump,
+    .aluRes_rdy
     );
 
     branch_unit branch_unit(
@@ -131,11 +132,26 @@ end
 
 always_comb begin
 
-  if(aluBsel) aluB = rd2;
-  else aluB = imm;
+  if(aluBsel) begin
+    aluB = rd2;
+    aluB_rdy = rd2_rdy;
+  end
+  else begin
+    aluB = imm;
+    aluB_rdy = 1;
+  end
 
-  if(aluAsel) aluA = rd1;
-  else aluA = PC;
+  if(aluAsel) begin
+    aluA = rd1;
+    aluA_rdy = rd1_rdy;
+  end
+  else begin
+    aluA = PC;
+    aluA_rdy = 1;
+  end
+
+  if(aluA_rdy & aluB_rdy) aluRes_rdy = 1;
+  else aluRes_rdy = 0;
 
 end
 
