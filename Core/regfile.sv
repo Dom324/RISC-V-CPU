@@ -4,8 +4,8 @@ module regfile(
   input logic [4:0] wa, ra1, ra2,
   output logic [31:0] rd1, rd2,
   input logic new_instr,
-  output logic stall_from_reg,
-  output logic [31:0] reg_rd1, reg_rd2
+  output logic [31:0] reg_rd1, reg_rd2,
+  output logic rd1_rdy, rd2_rdy
 );
 
   //logic [31:0] registers [31:0];			//32x32 bits wide registers
@@ -14,8 +14,21 @@ module regfile(
 
 always_comb begin
 
-  if(new_instr) stall_from_reg = 1;
-  else stall_from_reg = 0;
+  if(ra1 == 5'b00000) rd1_rdy = 1;
+  else begin
+
+    if(new_instr) rd1_rdy = 0;
+    else rd1_rdy = 1;
+
+  end
+
+  if(ra2 == 5'b00000) rd2_rdy = 1;
+  else begin
+
+    if(new_instr) rd2_rdy = 0;
+    else rd2_rdy = 1;
+
+  end
 
 end
 
