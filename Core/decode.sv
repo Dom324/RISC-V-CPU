@@ -37,7 +37,7 @@ always_comb begin
   case(instr[6:0])
 
     7'b0110111, 7'b0010111, 7'b1101111, 7'b1100011, 7'b1100111, 7'b0000011,
-    7'b0010011, 7'b0001111, 7'b1110011, 7'b0100011, 7'b0110011: unknown_instr = 0;
+    7'b0010011, 7'b0100011, 7'b0110011: unknown_instr = 0;
 
     default: unknown_instr = 1;
 
@@ -100,8 +100,8 @@ aluOp = funct3;
 
     end
 
-    7'b1100111, 7'b0000011, 7'b0010011, 7'b0001111, 7'b1110011: begin		//I-type instruction
-
+    7'b1100111, 7'b0000011, 7'b0010011: begin		//I-type instruction
+    //7'b0001111 a 7'b1110011
 	    rd = instr[11:7];
       rs1 = instr[19:15];
       funct3 = instr[14:12];
