@@ -109,36 +109,6 @@ always_ff @ (posedge CLK) begin
 
   end
 
-/*fetch_valid_buffer_next = fetch_valid_buffer;
-
-if(fetch_valid) begin     //instrukce z icache je valid
-
-  if(!stall_pc) begin
-
-    fetch_valid_buffer_next = 0;
-    instr_fetch_buffer_next = instr_fetch_exec;
-
-  end
-  else begin
-
-    fetch_valid_buffer_next = 1;
-    instr_fetch_buffer_next = instr_fetch_exec;
-
-  end
-
-end
-else begin
-
-  if(stall_pc) begin
-
-    fetch_valid_buffer_next = fetch_valid_exec;
-    instr_fetch_buffer_next = instr_fetch_exec;
-
-  end
-  else begin
-    fetch_valid_buffer_next = 0;
-  end*/
-
 end
 
 always_ff @ (posedge CLK) begin
@@ -151,15 +121,6 @@ end
 always_comb begin
 
   instr_executed = instr_executed_reg;
-
-  /*if(fetch_valid_exec) begin
-
-    if(decoder_stall) instr_executed = 0;
-    else instr_executed = 1;
-
-  end
-  else instr_executed = 0;*/
-
 
   if(fetch_valid_exec) begin
 
@@ -196,10 +157,14 @@ always_comb begin
 
         if(!stall_debug) begin
 
-          fetch_valid_exec = 1;
-          instr_fetch_exec = instr_fetch;
+          if(instr_executed_reg) begin
 
-          new_instr = 1;
+            fetch_valid_exec = 1;
+            instr_fetch_exec = instr_fetch;
+
+            new_instr = 1;
+
+          end
 
         end
 
@@ -236,12 +201,12 @@ end
 always_comb begin
 
   PC = PC_reg;
-  nextPC = nextPC_reg;
+  nextPC = PCmux;
 
-  if(new_instr) PC = nextPC_reg;
+  if(new_instr & instr_executed_reg) PC = nextPC_reg;
   else PC = PC_reg;
 
-  if(branch || jump) begin
+  /*if(branch || jump) begin
 
     if(aluRes_rdy) nextPC = PCmux;
     else nextPC = nextPC_reg;
@@ -252,7 +217,7 @@ always_comb begin
     if(new_instr) nextPC = PCmux;
     else nextPC = nextPC_reg;
 
-  end
+  end*/
 
 end
 
