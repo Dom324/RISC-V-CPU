@@ -118,15 +118,10 @@ always_comb begin
 
   wd = 0;
 
-  if(!jump) begin
-
-    if(wdSelect == 2'b00) wd = aluRes;
-    else if(wdSelect == 2'b01) wd = memData;
-    else if(wdSelect == 2'b10) wd = PCplus4;
-    else wd = imm;      //wdSel == 3
-
-  end
-  else wd = PC;
+  if(wdSelect == 2'b00) wd = aluRes;
+  else if(wdSelect == 2'b01) wd = memData;
+  else if(wdSelect == 2'b10) wd = PCplus4;
+  else wd = imm;      //wdSel == 3
 
 end
 
@@ -155,7 +150,15 @@ always_comb begin
 
 end
 
-  alu alu(aluA, aluB, aluOp, funct7, aluRes);
+  //alu alu(aluA, aluB, aluOp, funct7, aluRes);
+
+  alu alu(
+    .a(aluA),
+    .b(aluB),
+    .aluOp,
+    .funct7,
+    .out(aluRes)
+  );
 
   //logika PC
   assign PCplus4 = PC + 4;
