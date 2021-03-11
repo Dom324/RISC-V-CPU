@@ -54,7 +54,7 @@ branch = 0;
 
 	    we_reg = 1;
 	    pcControl = 1;
-	    wdSelect = 2'b00;
+	    wdSelect = 2'b10;
 	    aluBsel = 1'b0;
 	    memory_en = 1'b0;
 	    store_size = 2'b11;
@@ -88,7 +88,7 @@ branch = 0;
         pcControl = 1;
         wdSelect = 2'b10;
         memory_en = 1'b0;
-        aluAsel = 0;
+        aluAsel = 1;
         jump = 1;
 
       end
