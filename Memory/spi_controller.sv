@@ -67,7 +67,7 @@ localparam invert_endianess = 1;					//opcode na cteni dat
 
   logic [31:0] SPI_data_buffer;
   logic [19:0] flash_addr;
-  logic busy, busyNext;
+  logic busy, busyNext, busy_pos_edge;
   logic receiving;
   logic startup, startupNext;
 
@@ -103,9 +103,11 @@ end
 
   //assign flash_addr [23:20] = 4'b0000;
 
-always_ff @ (negedge CLK) begin
+always_ff @ (posedge CLK) begin
 
-  if(!busy) begin
+  busy_pos_edge <= busy;
+
+  if(!busy_pos_edge) begin
 
     if(dcache_miss == 1) flash_addr[19:0] <= dcache_addr + 19'h51000;
     else if(icache_miss == 1) flash_addr[19:0] <= icache_addr + 19'h51000;
