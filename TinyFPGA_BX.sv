@@ -57,17 +57,30 @@ module TinyFPGA_BX (
 );
 
   logic keyboard_data, keyboard_clock, hsync, vsync, VGA_pixel, CLK_VGA, CLK_CPU;
-  logic [26:0] clk_div;
   logic SPI_CS, SPI_CLK, SPI_SO, SPI_SI;
 
-  logic resetn, resetp, pll_locked;
+  logic resetn, resetp, pll_locked, PIN_12_buff, PIN_13_buff;
 
-  assign keyboard_data = PIN_12;
-  assign keyboard_clock = PIN_13;
   assign PIN_10 = hsync;
   assign PIN_11 = vsync;
   assign PIN_14 = VGA_pixel;
   assign PIN_8 = CLK_VGA;
+
+  //assign keyboard_data = PIN_13;
+  //assign keyboard_clock = PIN_12;
+
+always_ff @ (posedge CLK_CPU) begin
+  //klavesnice skrz dva flip flopy
+  {keyboard_data, PIN_13_buff} <= {PIN_13_buff, PIN_13};
+
+end
+
+always_ff @ (posedge CLK_CPU) begin
+  //klavesnice skrz dva flip flopy
+  {keyboard_clock, PIN_12_buff} <= {PIN_12_buff, PIN_12};
+
+end
+
 
   logic [7:0] DIP_switch;
 
@@ -226,7 +239,12 @@ end
 
 always_comb begin
 
-  if(o_debounced_DIP1) stall_debug = 0;
+  if(o_debounced_DIP1) begin
+
+      if(clk_div == 10'h3ff) stall_debug = 0;
+      else stall_debug = 1;
+
+  end
   else stall_debug = !r_debug_button_event;
 
 end
@@ -246,14 +264,16 @@ always_ff @ (posedge CLK_CPU, negedge pll_locked) begin
 
 end
 
-/*always_ff @ (posedge CLK_16mhz) begin
+  logic [9:0] clk_div;
+
+always_ff @ (posedge CLK_16mhz) begin
 
   if(CLK_16mhz) clk_div <= clk_div + 1;
 
-  if(clk_div[6]) CLK_CPU <= 1;
-  else CLK_CPU <= 0;
+  //if(clk_div[6]) CLK_CPU <= 1;
+  //else CLK_CPU <= 0;
 
-end*/
+end
 
   assign CLK_CPU = CLK_16mhz;
 
