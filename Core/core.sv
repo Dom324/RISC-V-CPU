@@ -38,7 +38,14 @@ module core(
 
   //assign debug = {3'b000, stall_pc, instr_fetch[27:0]};
 
-  assign memory_en_out = memory_en & fetch_valid_exec & aluRes_rdy;
+always_comb begin
+
+  if(store_size == 2'b11) memory_en_out = memory_en & aluRes_rdy;
+  else memory_en_out = memory_en & fetch_valid_exec & aluRes_rdy;
+
+end
+
+  //assign memory_en_out = memory_en & fetch_valid_exec & aluRes_rdy;
 
 always_comb begin
 
@@ -58,8 +65,9 @@ always_comb begin
     7'b1001011: debug = {rs1, rs2, 22'h000000};
     7'b1001100: debug = reg_rd1;
     7'b1001101: debug = reg_rd2;
-    7'b1001110: debug = {1'b0, aluOp, 1'b0, funct3, 1'b0, funct7, 3'b000, branch_taken, 12'h000};
+    7'b1001110: debug = {1'b0, aluOp, 1'b0, funct3, 1'b0, funct7, 3'b000, branch_taken, 2'b00, store_size, 3'b000, memory_en, 4'h000};
     7'b1001111: debug = PCmux;
+    7'b1010000: debug = mem_read_data;
     default: debug = PC;
   endcase
 
