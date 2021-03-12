@@ -36,6 +36,7 @@ module CPU(
 
   logic [7:0] pressed_key;
   logic clean_key_buffer, keyboard_valid;
+  logic [31:0] keyboard_scancode;
 
   logic video_write_enable;
   logic [7:0] video_write_data;
@@ -45,14 +46,17 @@ module CPU(
 
   //logic [31:0] core_debug;
 
-  always_comb begin
+always_comb begin
 
-      if(DIP_switch[6]) debug = debug_core;
-      else debug = debug_mem;
+  if(DIP_switch[6:0] == 7'b1111111) debug = {3'b000, keyboard_valid, 20'h000000, pressed_key};
+  //else if(DIP_switch[6:0] == 7'b1111110) debug = {3'b000, keyboard_valid, 20'h000000, keyboard_scancode};
+  else if(DIP_switch[6:0] == 7'b1111110) debug = keyboard_scancode;
+  else if(DIP_switch[6]) debug = debug_core;
+  else debug = debug_mem;
 
       //debug = debug_core;
 
-  end
+end
 
 display_engine display_engine(
                               .CLK_CPU(CLK_CPU),
@@ -149,6 +153,7 @@ core core(
 keyboard keyboard(
                 .CLK(CLK_CPU),
                 .keyboard_data(keyboard_data),
+                .keyboard_scancode,
                 .keyboard_clock(keyboard_clock),
                 .clean_key_buffer(clean_key_buffer),
                 .pressed_key(pressed_key),
