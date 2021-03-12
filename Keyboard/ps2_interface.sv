@@ -1,6 +1,6 @@
 /*
       Obvod bere jako vstup hodinovy a datovy signal z klavesnice
-      Klavesnice posila data v 11 bitovych "paketech" (data posila kdyz je clk log 0):
+      Klavesnice posila data v 11 bitovych "paketech" (data posila kdyz je clk_keyboard log 0):
 
           1 start bit.  This is always 0.
           8 data bits, least significant bit first.
@@ -26,15 +26,16 @@
 */
 
 module ps2_interface(
-  input logic clk, data,            //vstupni hodinovy signal a data z klavesnice
+  input logic clk_keyboard, clk_cpu, data,            //vstupni hodinovy signal a data z klavesnice
   output logic [7:0] scancode,         //scan code - neco jako ascii, ale pro klavesnice
-  output logic is_valid
+  output logic is_valid_out
 );
   logic [7:0] buffer;       //zde se ukladaji jednotlive datove bity
   logic [3:0] FSM_state;		//stav FSM
   logic [3:0] FSM_state_next; //pristi stav FSM
+  logic ps2_clk_prev, is_valid;
 
-always_ff @ (negedge clk) begin
+always_ff @ (negedge clk_keyboard) begin
 
   FSM_state <= FSM_state_next;      //na konci cyklu se aktualizuje stav FSM
 
@@ -84,6 +85,15 @@ always_comb begin
     default: FSM_state_next = 0;
 
   endcase
+
+end
+
+always_ff @ (posedge clk_cpu) begin
+
+  ps2_clk_prev <= clk_keyboard;
+
+  if(ps2_clk_prev != clk_keyboard) is_valid_out = is_valid;
+  else is_valid_out = 0;
 
 end
 
