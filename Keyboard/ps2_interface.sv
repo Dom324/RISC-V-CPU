@@ -26,18 +26,23 @@
 */
 
 module ps2_interface(
-  input clk, data,            //vstupni hodinovy signal a data z klavesnice
-  output reg [7:0] scancode,         //scan code - neco jako ascii, ale pro klavesnice
-  output reg is_valid
+  input logic clk, data,            //vstupni hodinovy signal a data z klavesnice
+  output logic [7:0] scancode,         //scan code - neco jako ascii, ale pro klavesnice
+  output logic is_valid
 );
-  reg [7:0] buffer;       //zde se ukladaji jednotlive datove bity
-  reg [3:0] FSM_state;		//stav FSM
-  reg [3:0] FSM_state_next; //pristi stav FSM
+  logic [7:0] buffer;       //zde se ukladaji jednotlive datove bity
+  logic [3:0] FSM_state;		//stav FSM
+  logic [3:0] FSM_state_next; //pristi stav FSM
 
-always @ (negedge clk) begin
+always_ff @ (negedge clk) begin
 
   FSM_state <= FSM_state_next;      //na konci cyklu se aktualizuje stav FSM
-  scancode = 0;
+
+end
+
+always_comb begin
+
+  scancode = buffer;
   is_valid = 0;
 
   case(FSM_state)
@@ -73,7 +78,6 @@ always @ (negedge clk) begin
     //Stav 4: pokud data == 1, posli na vystup obsah bufferu + "is_valid" nastav na log 1, nasledne se vzdy vrati na Stav 1
     10: begin
           FSM_state_next = 0;
-          scancode = buffer;
           is_valid = 1;
         end
 
@@ -81,6 +85,6 @@ always @ (negedge clk) begin
 
   endcase
 
-
 end
+
 endmodule
