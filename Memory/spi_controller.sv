@@ -286,7 +286,7 @@ always_comb begin
   else if(byte_counter == 2'b00) flash_byte = opcode;
   else if(byte_counter == 2'b01) flash_byte = {4'b0000, flash_addr[19:16]};
   else if(byte_counter == 2'b10) flash_byte = flash_addr[15:8];
-  else if(byte_counter == 2'b11) flash_byte = flash_addr[7:0];
+  else if(byte_counter == 2'b11) flash_byte = {flash_addr[7:2], 2'b00};
   else flash_byte = opcode;
 
 end
