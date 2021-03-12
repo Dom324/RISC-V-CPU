@@ -98,6 +98,7 @@ branch = 0;
           wdSelect = 2'b01;
           memory_en = 1'b1;
           we_reg = 1;
+          store_size = 2'b11;
 
       end
       else if(op == 7'b0010011) begin					//ADDI, XORI.... instructions
