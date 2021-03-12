@@ -1,11 +1,13 @@
 module scancode_to_ascii(
   input logic [7:0] scan_code,
-  output logic [7:0] ascii
+  output logic [7:0] ascii,
+  output logic is_valid
 );
 
 always_comb begin
 
 ascii = 0;
+is_valid = 1;
 
   case(scan_code)
 
@@ -35,7 +37,7 @@ ascii = 0;
   8'h22: ascii = 8'h58;                   //X
   8'h35: ascii = 8'h59;                   //Y
   8'h1a: ascii = 8'h5a;                   //Z
-  8'hff: ascii = 8'h00;			//debug
+  //8'hff: ascii = 8'h00;			//debug
   8'h70: ascii = 8'h30;                   //0
   8'h69: ascii = 8'h31;                   //1
   8'h72: ascii = 8'h32;                   //2
@@ -46,7 +48,10 @@ ascii = 0;
   8'h6c: ascii = 8'h37;                   //6
   8'h75: ascii = 8'h38;                   //8
   8'h7d: ascii = 8'h39;                   //9
-	default: ascii = 0;
+	default: begin
+    ascii = 0;
+    is_valid = 0;
+  end
 
 
   endcase
