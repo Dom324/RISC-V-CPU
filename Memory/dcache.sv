@@ -47,7 +47,7 @@ module dcache(
 
     logic [19:0] mem_addr_old;
 
-    logic [31:0] MASK;
+    logic [31:0] MASK, RDATA_OUT_mem;
     logic [7:0] RADDR_TAG, RADDR_CACHE, WADDR_CACHE, WADDR_TAG;
     logic [15:0] tagA_NEW, tagB_NEW, tagC_NEW, tagD_NEW;
     logic [1:0] LRU_A, LRU_B, LRU_C, LRU_D;
@@ -97,45 +97,36 @@ always_comb begin
       end
 
       2'b01: begin                    //stav == 1, z pameti cache se cte
-        if(read_en == 1) begin
+        if(!cache_miss) begin
 
-          if(!cache_miss) begin
-
-            if(read_en) begin
-              nextState = 1;
-            end
-            else if(write_en) begin
-              nextState = 2;
-            end
-            else nextState = 0;
-
+          if(read_en) begin
+            nextState = 1;
           end
-          else nextState = 3;
+          else if(write_en) begin
+            nextState = 2;
+          end
+          else nextState = 0;
 
         end
-        else nextState = 0;
-      end
+        else nextState = 3;
 
+      end
       2'b10: begin              //stav == 2, do cache se zapisuje
-        if(write_en) begin
 
-          if(!cache_miss) begin
+        if(!cache_miss) begin
 
-            if(read_en) begin
-              nextState = 1;
-            end
-            else if(write_en) begin
-              nextState = 2;
-            end
-            else nextState = 0;
-
+          if(read_en) begin
+            nextState = 1;
           end
-          else nextState = 3;
+          else if(write_en) begin
+            nextState = 2;
+          end
+          else nextState = 0;
 
         end
-        else nextState = 0;
-      end
+        else nextState = 3;
 
+      end
       2'b11: begin                    //stav == 3, do cache se fetchuje, cache cte data
         if(fetch) nextState = 0;
         else nextState = 3;
@@ -149,10 +140,19 @@ end
 
 always_comb begin
 
+  if(mem_addr_old[1:0] == 2'b00) RDATA_OUT = RDATA_OUT_mem;
+  else if(mem_addr_old[1:0] == 2'b01) RDATA_OUT = {RDATA_OUT_mem[7:0], RDATA_OUT_mem[31:8]};
+  else if(mem_addr_old[1:0] == 2'b10) RDATA_OUT = {RDATA_OUT_mem[15:0], RDATA_OUT_mem[31:16]};
+  else if(mem_addr_old[1:0] == 2'b11) RDATA_OUT = {RDATA_OUT_mem[23:0], RDATA_OUT_mem[31:24]};
+
+end
+
+always_comb begin
+
   RADDR_TAG = 8'h00;
   RADDR_CACHE = 8'h00;
-  WADDR_CACHE = 8'h00;
-  WADDR_TAG = 8'h00;
+  WADDR_CACHE = mem_addr_old[9:2];    //write
+  WADDR_TAG = mem_addr_old[9:2];    //write
 
   if(nextState == 2'b01) begin
 
@@ -164,16 +164,12 @@ always_comb begin
 
     RADDR_CACHE = mem_addr[9:2];    //write
     RADDR_TAG = mem_addr[9:2];     //read
-    WADDR_CACHE = mem_addr_old[9:2];    //write
-    WADDR_TAG = mem_addr_old[9:2];    //write
 
   end
   else if(nextState == 2'b11) begin
 
     RADDR_CACHE = mem_addr_old[9:2];    //write
     RADDR_TAG = mem_addr_old[9:2];     //read
-    WADDR_CACHE = mem_addr_old[9:2];    //write
-    WADDR_TAG = mem_addr_old[9:2];    //write
 
   end
 
@@ -184,7 +180,7 @@ always_comb begin
 
 //defaultni hodnoty
 cache_miss = 0;
-RDATA_OUT = 0;      //dont care
+RDATA_OUT_mem = 0;      //dont care
 RDATA_valid = 0;
 set_used = 2'b00;       //dont care
 write_ready = 0;
@@ -229,28 +225,28 @@ write_data = write_data_from_cpu;
 
       //cteme data
       if( (tagA[9:0] == mem_addr_old[19:10]) & (tagA[13] == 1) ) begin
-        RDATA_OUT = RDATA_setA;
+        RDATA_OUT_mem = RDATA_setA;
         set_used = 2'b00;
         cache_miss = 0;
         RDATA_valid = 1;
       end
 
       else if( (tagB[9:0] == mem_addr_old[19:10]) & (tagB[13] == 1) ) begin
-          RDATA_OUT = RDATA_setB;
+          RDATA_OUT_mem = RDATA_setB;
           set_used = 2'b01;
           cache_miss = 0;
           RDATA_valid = 1;
       end
 
       else if( (tagC[9:0] == mem_addr_old[19:10]) & (tagC[13] == 1) ) begin
-          RDATA_OUT = RDATA_setC;
+          RDATA_OUT_mem = RDATA_setC;
           set_used = 2'b10;
           cache_miss = 0;
           RDATA_valid = 1;
       end
 
       else if( (tagD[9:0] == mem_addr_old[19:10]) & (tagD[13] == 1) ) begin
-          RDATA_OUT = RDATA_setD;
+          RDATA_OUT_mem = RDATA_setD;
           set_used = 2'b11;
           cache_miss = 0;
           RDATA_valid = 1;
@@ -265,7 +261,7 @@ write_data = write_data_from_cpu;
 
     2'b10: begin             //zapis dat
 
-      RDATA_OUT = 0;      //dont care
+      RDATA_OUT_mem = 0;      //dont care
       RDATA_valid = 0;
 
       //zapisujeme data
@@ -326,7 +322,7 @@ write_data = write_data_from_cpu;
 
         cache_miss = 0;
         RDATA_valid = 1;
-        RDATA_OUT = write_data;
+        RDATA_OUT_mem = write_data;
 
         if(tagA[13] == 0) set_used = 2'b00;
         else if(tagB[13] == 0) set_used = 2'b01;
