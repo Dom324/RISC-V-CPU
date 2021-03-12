@@ -108,6 +108,10 @@ aluOp = funct3;
       imm = { {21{instr[31]}}, instr[30:20] };
 	    instrType = 3'b100;
 
+
+      if(instr[6:0] == 7'b0000011) aluOp = 0;
+      else aluOp = funct3;
+
       rs2 = 5'b00000;
 	    funct7 = 7'b0000000;
     end
@@ -133,6 +137,7 @@ aluOp = funct3;
       funct3 = instr[14:12];
 	    funct7 = instr[31:25];
 	    instrType = 3'b110;
+      aluOp = funct3;
 
       imm = 0;
     end
