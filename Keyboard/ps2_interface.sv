@@ -39,6 +39,22 @@ always_ff @ (negedge clk_keyboard) begin
 
   FSM_state <= FSM_state_next;      //na konci cyklu se aktualizuje stav FSM
 
+  case(FSM_state)
+    //Stav 1: data == 0 -> klavesnice bude posilat data
+    //Stav 2: ukladani dat do bufferu
+    1: buffer[0] <= data;
+    2: buffer[1] <= data;
+    3: buffer[2] <= data;
+    4: buffer[3] <= data;
+    5: buffer[4] <= data;
+    6: buffer[5] <= data;
+    7: buffer[6] <= data;
+    8: buffer[7] <= data;
+    //Posledni bit ulozen do bufferu, pokracuje se na Stav 3
+    //Stav 3: pokud je pocet log 1 v bufferu a parity bitu lichy (celkem 9 bitu, "lichost" lze zjistit pomoci log fce XOR), pokracuj na Stav 4, jinak jdi na Stav 1
+    //Stav 4: pokud data == 1, posli na vystup obsah bufferu + "is_valid" nastav na log 1, nasledne se vzdy vrati na Stav 1
+  endcase
+
 end
 
 always_comb begin
@@ -53,21 +69,21 @@ always_comb begin
 
 
     //Stav 2: ukladani dat do bufferu
-    1: begin buffer[0] = data;
+    1: begin //buffer[0] = data;
              FSM_state_next = 2; end
-    2: begin buffer[1] = data;
+    2: begin //buffer[1] = data;
              FSM_state_next = 3; end
-    3: begin buffer[2] = data;
+    3: begin //buffer[2] = data;
              FSM_state_next = 4; end
-    4: begin buffer[3] = data;
+    4: begin //buffer[3] = data;
              FSM_state_next = 5; end
-    5: begin buffer[4] = data;
+    5: begin //buffer[4] = data;
              FSM_state_next = 6; end
-    6: begin buffer[5] = data;
+    6: begin //buffer[5] = data;
              FSM_state_next = 7; end
-    7: begin buffer[6] = data;
+    7: begin //buffer[6] = data;
              FSM_state_next = 8; end
-    8: begin buffer[7] = data;
+    8: begin //buffer[7] = data;
              FSM_state_next = 9; end
     //Posledni bit ulozen do bufferu, pokracuje se na Stav 3
 
@@ -92,7 +108,7 @@ always_ff @ (posedge clk_cpu) begin
 
   ps2_clk_prev <= clk_keyboard;
 
-  if(ps2_clk_prev != clk_keyboard) is_valid_out = is_valid;
+  if(!ps2_clk_prev & clk_keyboard) is_valid_out = is_valid;
   else is_valid_out = 0;
 
 end
