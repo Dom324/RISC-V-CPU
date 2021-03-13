@@ -38,6 +38,10 @@ is_valid = 1;
   8'h35: ascii = 8'h59;                   //Y
   8'h1a: ascii = 8'h5a;                   //Z
   //8'hff: ascii = 8'h00;			//debug
+  8'h29: ascii = 8'h20;                   //SPACE
+  8'h5a: ascii = 8'h03;                   //ENTER
+  8'h66: ascii = 8'h08;                   //BACKSPACE
+
   8'h70: ascii = 8'h30;                   //0
   8'h69: ascii = 8'h31;                   //1
   8'h72: ascii = 8'h32;                   //2
@@ -48,6 +52,20 @@ is_valid = 1;
   8'h6c: ascii = 8'h37;                   //6
   8'h75: ascii = 8'h38;                   //8
   8'h7d: ascii = 8'h39;                   //9
+
+  8'h54: ascii = 8'h28;                   //(
+  8'h55: ascii = 8'h3d;                   //=
+  8'h5b: ascii = 8'h29;                   //)
+
+  8'h41: ascii = 8'h2c;                   //,
+  8'h4a: ascii = 8'h2f;                   // /
+  8'h71: ascii = 8'h2e;                   //.
+  8'h7c: ascii = 8'h2a;                   //*
+  8'h7b: ascii = 8'h2d;                   //-
+  8'h79: ascii = 8'h2b;                   //+
+
+
+  8'hf0: ascii = 8'hf0;                   //key break
 	default: begin
     ascii = 0;
     is_valid = 0;
