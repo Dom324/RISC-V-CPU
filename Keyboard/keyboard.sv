@@ -6,8 +6,8 @@ module keyboard(
   output logic [31:0] keyboard_scancode
 );
 
-  logic [7:0] buffer, CODEWORD, ascii;
-  logic is_valid, is_valid_reg, is_new;
+  logic [7:0] buffer, scancode, ascii;
+  logic is_valid, is_valid_reg, is_new, is_valid_transl;
 
   logic [31:0] scancode_reg;
 
@@ -18,14 +18,14 @@ module keyboard(
 
 always_ff @ (posedge CLK) begin
 
-  if(is_new) scancode_reg <= {scancode_reg[23:0], CODEWORD};
+  if(is_new) scancode_reg <= {scancode_reg[23:0], scancode};
   else scancode_reg <= scancode_reg;
 
 end
 
 always_ff @ (posedge CLK) begin
 
-  if(is_valid & is_new) buffer <= ascii;
+  if(is_new) buffer <= ascii;
   else buffer <= buffer;
 
 end
@@ -42,21 +42,34 @@ always_ff @ (posedge CLK) begin
 
 end
 
+always_comb begin
 
-  ps2_interface2 ps2(
+  if(scancode == 8'hf0) is_valid = 0;           //break kod
+  else if(buffer == 8'hf0) is_valid = 0;        //break klavesa
+  else is_valid = is_valid_transl;
+
+end
+
+  /*ps2_interface2 ps2(
                     .CLK(CLK),
                     .PS2_CLK(keyboard_clock),
                     .PS2_DATA(keyboard_data),
                     .TRIG_ARR(is_new),
                     .CODEWORD(CODEWORD)
+                    );*/
+
+  ps2_interface ps2(
+                    .clk_cpu(CLK),
+                    .clk_keyboard(keyboard_clock),
+                    .data(keyboard_data),
+                    .is_valid_out(is_new),
+                    .scancode(scancode)
                     );
 
-
-
   scancode_to_ascii scancode_to_ascii(
-                                    .scan_code(CODEWORD),
+                                    .scan_code(scancode),
                                     .ascii(ascii),
-                                    .is_valid
+                                    .is_valid(is_valid_transl)
                                     );
 
 endmodule
