@@ -975,6 +975,240 @@ default: pixel_row = 0;
 endcase
 end
 
+8'h28: begin                   //(
+case(line_number)
+  0: pixel_row = 16'h0000;
+  1: pixel_row = 16'h0000;
+  2: pixel_row = 16'h00C0;
+  3: pixel_row = 16'h00C0;
+  4: pixel_row = 16'h0300;
+  5: pixel_row = 16'h0300;
+  6: pixel_row = 16'h0300;
+  7: pixel_row = 16'h0300;
+  8: pixel_row = 16'h0300;
+  9: pixel_row = 16'h0300;
+  10: pixel_row = 16'h0300;
+  11: pixel_row = 16'h0030;
+  12: pixel_row = 16'h0300;
+  13: pixel_row = 16'h00C0;
+  14: pixel_row = 16'h00C0;
+  15: pixel_row = 16'h0000;
+  16: pixel_row = 16'h0000;
+  17: pixel_row = 16'h0000;
+  18: pixel_row = 16'h0000;
+  19: pixel_row = 16'h0000;
+default: pixel_row = 0;
+endcase
+end
+
+8'h29: begin                   //)
+case(line_number)
+  0: pixel_row = 16'h0000;
+  1: pixel_row = 16'h0000;
+  2: pixel_row = 16'h0300;
+  3: pixel_row = 16'h0300;
+  4: pixel_row = 16'hC000;
+  5: pixel_row = 16'hC000;
+  6: pixel_row = 16'hC000;
+  7: pixel_row = 16'hC000;
+  8: pixel_row = 16'hC000;
+  9: pixel_row = 16'hC000;
+  10: pixel_row = 16'hC000;
+  11: pixel_row = 16'hC000;
+  12: pixel_row = 16'hC000;
+  13: pixel_row = 16'h0300;
+  14: pixel_row = 16'h0300;
+  15: pixel_row = 16'h0000;
+  16: pixel_row = 16'h0000;
+  17: pixel_row = 16'h0000;
+  18: pixel_row = 16'h0000;
+  19: pixel_row = 16'h0000;
+default: pixel_row = 0;
+endcase
+end
+
+8'h3d: begin                   //=
+case(line_number)
+  0: pixel_row = 16'h0000;
+  1: pixel_row = 16'h0000;
+  2: pixel_row = 16'h0000;
+  3: pixel_row = 16'h0000;
+  4: pixel_row = 16'h0000;
+  5: pixel_row = 16'h0000;
+  6: pixel_row = 16'h3FF0;
+  7: pixel_row = 16'h3FF0;
+  8: pixel_row = 16'h0000;
+  9: pixel_row = 16'h0000;
+  10: pixel_row = 16'h3FF0;
+  11: pixel_row = 16'h3FF0;
+  12: pixel_row = 16'h0000;
+  13: pixel_row = 16'h0000;
+  14: pixel_row = 16'h0000;
+  15: pixel_row = 16'h0000;
+  16: pixel_row = 16'h0000;
+  17: pixel_row = 16'h0000;
+  18: pixel_row = 16'h0000;
+  19: pixel_row = 16'h0000;
+default: pixel_row = 0;
+endcase
+end
+
+8'h2e: begin                   //,
+case(line_number)
+  0: pixel_row = 16'h0000;
+  1: pixel_row = 16'h0000;
+  2: pixel_row = 16'h0000;
+  3: pixel_row = 16'h0000;
+  4: pixel_row = 16'h0000;
+  5: pixel_row = 16'h0000;
+  6: pixel_row = 16'h0000;
+  7: pixel_row = 16'h0000;
+  8: pixel_row = 16'h0000;
+  9: pixel_row = 16'h0000;
+  10: pixel_row = 16'h0000;
+  11: pixel_row = 16'h0000;
+  12: pixel_row = 16'h03C0;
+  13: pixel_row = 16'h03C0;
+  14: pixel_row = 16'h03C0;
+  15: pixel_row = 16'h03C0;
+  16: pixel_row = 16'h03C0;
+  17: pixel_row = 16'h03C0;
+  18: pixel_row = 16'h0000;
+  19: pixel_row = 16'h0000;
+default: pixel_row = 0;
+endcase
+end
+
+8'h2e: begin                   //.
+case(line_number)
+  0: pixel_row = 16'h0000;
+  1: pixel_row = 16'h0000;
+  2: pixel_row = 16'h0000;
+  3: pixel_row = 16'h0000;
+  4: pixel_row = 16'h0000;
+  5: pixel_row = 16'h0000;
+  6: pixel_row = 16'h0000;
+  7: pixel_row = 16'h0000;
+  8: pixel_row = 16'h0000;
+  9: pixel_row = 16'h0000;
+  10: pixel_row = 16'h0000;
+  11: pixel_row = 16'h0000;
+  12: pixel_row = 16'h0000;
+  13: pixel_row = 16'h0000;
+  14: pixel_row = 16'h03C0;
+  15: pixel_row = 16'h03C0;
+  16: pixel_row = 16'h03C0;
+  17: pixel_row = 16'h03C0;
+  18: pixel_row = 16'h0000;
+  19: pixel_row = 16'h0000;
+default: pixel_row = 0;
+endcase
+end
+
+8'h2f: begin                   // /
+case(line_number)
+  0: pixel_row = 16'h0000;
+  1: pixel_row = 16'h0000;
+  2: pixel_row = 16'h0000;
+  3: pixel_row = 16'h0000;
+  4: pixel_row = 16'h0030;
+  5: pixel_row = 16'h0030;
+  6: pixel_row = 16'h00C0;
+  7: pixel_row = 16'h00C0;
+  8: pixel_row = 16'h0300;
+  9: pixel_row = 16'h0300;
+  10: pixel_row = 16'h0C00;
+  11: pixel_row = 16'h0C00;
+  12: pixel_row = 16'h3000;
+  13: pixel_row = 16'h3000;
+  14: pixel_row = 16'h0000;
+  15: pixel_row = 16'h0000;
+  16: pixel_row = 16'h0000;
+  17: pixel_row = 16'h0000;
+  18: pixel_row = 16'h0000;
+  19: pixel_row = 16'h0000;
+default: pixel_row = 0;
+endcase
+end
+
+8'h2a: begin                   //*
+case(line_number)
+  0: pixel_row = 16'h0000;
+  1: pixel_row = 16'h0000;
+  2: pixel_row = 16'h0000;
+  3: pixel_row = 16'h0000;
+  4: pixel_row = 16'h0CC0;
+  5: pixel_row = 16'h0CC0;
+  6: pixel_row = 16'h0300;
+  7: pixel_row = 16'h0300;
+  8: pixel_row = 16'h3FF0;
+  9: pixel_row = 16'h3FF0;
+  10: pixel_row = 16'h0300;
+  11: pixel_row = 16'h0300;
+  12: pixel_row = 16'h0CC0;
+  13: pixel_row = 16'h0CC0;
+  14: pixel_row = 16'h0000;
+  15: pixel_row = 16'h0000;
+  16: pixel_row = 16'h0000;
+  17: pixel_row = 16'h0000;
+  18: pixel_row = 16'h0000;
+  19: pixel_row = 16'h0000;
+default: pixel_row = 0;
+endcase
+end
+
+8'h2b: begin                   //+
+case(line_number)
+  0: pixel_row = 16'h0000;
+  1: pixel_row = 16'h0000;
+  2: pixel_row = 16'h0000;
+  3: pixel_row = 16'h0000;
+  4: pixel_row = 16'h0300;
+  5: pixel_row = 16'h0300;
+  6: pixel_row = 16'h0300;
+  7: pixel_row = 16'h0300;
+  8: pixel_row = 16'h3FF0;
+  9: pixel_row = 16'h3FF0;
+  10: pixel_row = 16'h0300;
+  11: pixel_row = 16'h0300;
+  12: pixel_row = 16'h0300;
+  13: pixel_row = 16'h0300;
+  14: pixel_row = 16'h0000;
+  15: pixel_row = 16'h0000;
+  16: pixel_row = 16'h0000;
+  17: pixel_row = 16'h0000;
+  18: pixel_row = 16'h0000;
+  19: pixel_row = 16'h0000;
+default: pixel_row = 0;
+endcase
+end
+
+8'h2d: begin                   //-
+case(line_number)
+  0: pixel_row = 16'h0000;
+  1: pixel_row = 16'h0000;
+  2: pixel_row = 16'h0000;
+  3: pixel_row = 16'h0000;
+  4: pixel_row = 16'h0000;
+  5: pixel_row = 16'h0000;
+  6: pixel_row = 16'h0000;
+  7: pixel_row = 16'h0000;
+  8: pixel_row = 16'h3FF0;
+  9: pixel_row = 16'h3FF0;
+  10: pixel_row = 16'h0000;
+  11: pixel_row = 16'h0000;
+  12: pixel_row = 16'h0000;
+  13: pixel_row = 16'h0000;
+  14: pixel_row = 16'h0000;
+  15: pixel_row = 16'h0000;
+  16: pixel_row = 16'h0000;
+  17: pixel_row = 16'h0000;
+  18: pixel_row = 16'h0000;
+  19: pixel_row = 16'h0000;
+default: pixel_row = 0;
+endcase
+end
+
 	default: begin
 
 	  pixel_row = 0;
