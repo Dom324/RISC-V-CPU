@@ -91,12 +91,10 @@ aluOp = funct3;
       funct3 = instr[14:12];
       imm = { {20{instr[31]}}, instr[7], instr[30:25], instr[11:8], 1'b0};
 	    instrType = 3'b011;
+      aluOp = 3'b000;
 
       rd = 5'b00000;
       funct7 = 7'b0000000;
-
-      if(funct3 == 3'b001) aluOp = 3'b000;
-      else aluOp = instr[14:12];
 
     end
 
