@@ -1053,7 +1053,7 @@ default: pixel_row = 0;
 endcase
 end
 
-8'h2e: begin                   //,
+8'h2c: begin                   //,
 case(line_number)
   0: pixel_row = 16'h0000;
   1: pixel_row = 16'h0000;
