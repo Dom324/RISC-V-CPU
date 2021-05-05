@@ -46,7 +46,11 @@ module icache(
     logic [31:0] RDATA_setA, RDATA_setB, RDATA_setC, RDATA_setD;
     logic [31:0] MASK;
 
+    logic [9:0] entries_used;
+
     logic [1:0] state, nextState;
+
+    logic read_en_cache;
 
     //assign debug = state;
 
@@ -68,6 +72,8 @@ always_comb begin
         2'b11: debug[15:0] = tagD;
       endcase
     end
+    //5'b00101: debug = RDATA_setA;
+    5'b00101: debug = {22'h000000, entries_used};
 
     default: debug = 0;
   endcase
@@ -141,8 +147,16 @@ always_comb begin
   RADDR_TAG = 8'h00;
   RADDR_CACHE = 8'h00;
   WADDR_CACHE = read_addr_old[9:2];    //write
+  read_en_cache = read_en;
 
-  if(nextState == 2'b01) begin
+  if(DIP_switch[4:0] == 5'b00101) begin
+
+    RADDR_TAG = 8'h26;
+    RADDR_CACHE = 8'h26;
+    read_en_cache = 1;
+
+  end
+  else if(nextState == 2'b01) begin
 
     RADDR_CACHE = read_addr[9:2];
     RADDR_TAG = read_addr[9:2];
@@ -456,6 +470,21 @@ always_comb begin
   end
 end
 
+always_ff @ (posedge CLK) begin
+
+  if(WE_setA || WE_setB || WE_setC || WE_setD) begin
+
+    case(set_used)
+      2'b00: if(tagA[13] != tagA_NEW[13]) entries_used <= entries_used + 1;
+      2'b01: if(tagB[13] != tagB_NEW[13]) entries_used <= entries_used + 1;
+      2'b10: if(tagC[13] != tagC_NEW[13]) entries_used <= entries_used + 1;
+      2'b11: if(tagD[13] != tagD_NEW[13]) entries_used <= entries_used + 1;
+    endcase
+
+  end
+
+end
+
 /*defparam icache_setA.RAM_low.INIT_0 =
 256'hf0000000000fff00000000000000000000000000000000008023011300B70000;
 defparam icache_setA.RAM_high.INIT_0 =
@@ -465,105 +494,105 @@ defparam icache_tagA.RAM.INIT_0 =
 
 
 RAM256x32 icache_setA(.RCLK_c(CLK),
-                      .RCLKE_c(1),
-                      .RE_c(read_en),
+                      .RCLKE_c(1'b1),
+                      .RE_c(read_en_cache),
                       .WCLK_c(CLK),
-                      .WCLKE_c(1),
+                      .WCLKE_c(1'b1),
                       .WE_c(WE_setA),
                       .RADDR_c(RADDR_CACHE),
                       .WADDR_c(WADDR_CACHE),
-                      .MASK_IN(0),
+                      .MASK_IN(32'h00000000),
                       .WDATA_IN(write_data),
                       .RDATA_OUT(RDATA_setA)
                       );
 
 RAM256x16 icache_tagA(.RCLK_c(CLK),
-                      .RCLKE_c(1),
-                      .RE_c(read_en),
+                      .RCLKE_c(1'b1),
+                      .RE_c(read_en_cache),
                       .WCLK_c(CLK),
-                      .WCLKE_c(1),
+                      .WCLKE_c(1'b1),
                       .WE_c(WE_tagA),
                       .RADDR_c(RADDR_TAG),
                       .WADDR_c(WADDR_CACHE),
-                      .MASK_IN(0),
+                      .MASK_IN(16'h0000),
                       .WDATA_IN(tagA_NEW),
                       .RDATA_OUT(tagA)
                       );
 
 RAM256x32 icache_setB(.RCLK_c(CLK),
-                      .RCLKE_c(1),
-                      .RE_c(read_en),
+                      .RCLKE_c(1'b1),
+                      .RE_c(read_en_cache),
                       .WCLK_c(CLK),
-                      .WCLKE_c(1),
+                      .WCLKE_c(1'b1),
                       .WE_c(WE_setB),
                       .RADDR_c(RADDR_CACHE),
                       .WADDR_c(WADDR_CACHE),
-                      .MASK_IN(0),
+                      .MASK_IN(32'h00000000),
                       .WDATA_IN(write_data),
                       .RDATA_OUT(RDATA_setB)
                       );
 
 RAM256x16 icache_tagB(.RCLK_c(CLK),
-                      .RCLKE_c(1),
-                      .RE_c(read_en),
+                      .RCLKE_c(1'b1),
+                      .RE_c(read_en_cache),
                       .WCLK_c(CLK),
-                      .WCLKE_c(1),
+                      .WCLKE_c(1'b1),
                       .WE_c(WE_tagB),
                       .RADDR_c(RADDR_TAG),
                       .WADDR_c(WADDR_CACHE),
-                      .MASK_IN(0),
+                      .MASK_IN(16'h0000),
                       .WDATA_IN(tagB_NEW),
                       .RDATA_OUT(tagB)
                       );
 
 RAM256x32 icache_setC(.RCLK_c(CLK),
-                      .RCLKE_c(1),
-                      .RE_c(read_en),
+                      .RCLKE_c(1'b1),
+                      .RE_c(read_en_cache),
                       .WCLK_c(CLK),
-                      .WCLKE_c(1),
+                      .WCLKE_c(1'b1),
                       .WE_c(WE_setC),
                       .RADDR_c(RADDR_CACHE),
                       .WADDR_c(WADDR_CACHE),
-                      .MASK_IN(0),
+                      .MASK_IN(32'h00000000),
                       .WDATA_IN(write_data),
                       .RDATA_OUT(RDATA_setC)
                       );
 
 RAM256x16 icache_tagC(.RCLK_c(CLK),
-                      .RCLKE_c(1),
-                      .RE_c(read_en),
+                      .RCLKE_c(1'b1),
+                      .RE_c(read_en_cache),
                       .WCLK_c(CLK),
-                      .WCLKE_c(1),
+                      .WCLKE_c(1'b1),
                       .WE_c(WE_tagC),
                       .RADDR_c(RADDR_TAG),
                       .WADDR_c(WADDR_CACHE),
-                      .MASK_IN(0),
+                      .MASK_IN(16'h0000),
                       .WDATA_IN(tagC_NEW),
                       .RDATA_OUT(tagC)
                       );
 
 RAM256x32 icache_setD(.RCLK_c(CLK),
-                      .RCLKE_c(1),
-                      .RE_c(read_en),
+                      .RCLKE_c(1'b1),
+                      .RE_c(read_en_cache),
                       .WCLK_c(CLK),
-                      .WCLKE_c(1),
+                      .WCLKE_c(1'b1),
                       .WE_c(WE_setD),
                       .RADDR_c(RADDR_CACHE),
                       .WADDR_c(WADDR_CACHE),
-                      .MASK_IN(0),
+                      .MASK_IN(32'h00000000),
                       .WDATA_IN(write_data),
                       .RDATA_OUT(RDATA_setD)
                       );
 
 RAM256x16 icache_tagD(.RCLK_c(CLK),
-                      .RCLKE_c(1),
-                      .RE_c(read_en),
+                      .RCLKE_c(1'b1),
+                      .RE_c(read_en_cache),
                       .WCLK_c(CLK),
-                      .WCLKE_c(1),
+                      .WCLKE_c(1'b1),
                       .WE_c(WE_tagD),
                       .RADDR_c(RADDR_TAG),
                       .WADDR_c(WADDR_CACHE),
-                      .MASK_IN(0),
+                      .MASK_IN(16'h0000),
                       .WDATA_IN(tagD_NEW),
                       .RDATA_OUT(tagD)
                       );
