@@ -241,8 +241,9 @@ always_comb begin
 
   if(o_debounced_DIP1) begin
 
-      if(clk_div == 10'h3ff) stall_debug = 0;
-      else stall_debug = 1;
+      /*if(clk_div == 10'h3ff) stall_debug = 0;
+      else stall_debug = 1;*/
+      stall_debug = 0;
 
   end
   else stall_debug = !r_debug_button_event;
