@@ -155,7 +155,8 @@ AT25SF081 flash(SPI_SCK, SPI_SS, SPI_SI, SPI_IO3, SPI_IO2, SPI_SO);
                 .flash_io2_di(flash_io2_di),
                 .flash_io3_di(flash_io3_di)*/
 
-                .stall_debug(0)
+                .stall_debug(1'b0),
+                .DIP_switch(8'h00)
                 );
 
 
