@@ -1,14 +1,13 @@
 module main_controller(
   input logic CLK,
   input logic resetn,
-  input logic decoder_stall,
   input logic we_reg_controller,
   input logic fetch_valid,
-  input logic [31:0] PCmux,
+  input logic [19:0] PCmux,
   input logic [31:0] instr_fetch,
 
-  output logic [31:0] PC,
-  output logic [31:0] nextPC,
+  output logic [19:0] PC,
+  output logic [19:0] nextPC,
   output logic [31:0] instr_fetch_exec,
   output logic fetch_enable,
   output logic we_reg,
@@ -17,68 +16,56 @@ module main_controller(
 
   input logic stall_debug,
 
-  output logic new_instr,
-
+  input logic unknown_instr,
   input logic branch,
   input logic jump,
 
-  input logic aluRes_rdy
+  output logic new_instr,
+
+  input logic aluRes_rdy,
+  input logic branch_unit_rdy,
+  input logic load_store_unit_rdy,
+  input logic load_store_rdata_valid,
+  input logic PCmux_valid
   );
 
   logic fetch_valid_buffer;
   logic [31:0] instr_fetch_buffer;
-  logic [31:0] PC_reg, nextPC_reg;
+  logic [19:0] PC_reg, nextPC_reg;
 
   logic stall_reg;
 
   logic instr_executed, instr_executed_reg;
 
-  //logic fetch_enable_reg;
+  logic been_there_done_that;
+  logic stall_debug2;
 
-/*always_ff @ (posedge CLK) begin
+always_ff @ (posedge CLK) begin
 
-  if(!resetn) fetch_enable_reg <= 1;
-  else begin
+  //if(PC == 32'h00000048) stall_debug2 <= stall_debug;
+  //else if(PC == 32'h00000054) stall_debug2 <= stall_debug;
+  //else if(PC == 32'h000000d8) stall_debug2 <= stall_debug;
+  //else stall_debug2 <= 0;
 
-    fetch_enable_reg <= fetch_enable;
-
-    //if(new_instr) begin
-      //if(instr_executed) fetch_enable_reg <= 1;
-      //else fetch_enable_reg <= 0;
-    //end else if(instr_executed) fetch_enable_reg <= 1;
-
-  end
-
-end*/
+end
 
 always_comb begin
 
 //slo by vylepsit
 //instrukce ktere neskacou muzou fetchovat uz o cyklus drive
 
-  if(instr_executed) fetch_enable = 1;
-  else fetch_enable = 0;
+if(PCmux_valid & !unknown_instr) fetch_enable = 1;
+else fetch_enable = 0;
 
-  //fetch_enable = fetch_enable_reg;
+  /*if(branch) begin
 
-  /*if(branch || jump) begin
-
-    if(instr_executed) fetch_enable = 1;
+    if(instr_executed & branch_unit_rdy) fetch_enable = 1;
     else fetch_enable = 0;
 
   end else begin
 
-    if(new_instr) begin
-
-      if(instr_executed) fetch_enable = 1;
-      else fetch_enable = 0;
-
-    end
-    else begin
-
-      if(instr_executed) fetch_enable = 1;
-
-    end
+    if(instr_executed) fetch_enable = 1;
+    else fetch_enable = 0;
 
   end*/
 
@@ -87,8 +74,8 @@ end
 always_ff @ (posedge CLK) begin
 
   if(!resetn) begin
-    fetch_valid_buffer <= 0;
-    instr_fetch_buffer <= 0;
+    fetch_valid_buffer <= 1;
+    instr_fetch_buffer <= 32'h00000033;
     //stall_debug_buffer <= 0;
   end
   else begin
@@ -122,26 +109,29 @@ always_comb begin
 
   instr_executed = instr_executed_reg;
 
-  if(fetch_valid_exec) begin
+  if(unknown_instr) instr_executed = 0;
+  else begin
 
-    if(instr_executed_reg) begin
+    if(fetch_valid_exec) begin
 
-      if(new_instr) begin
+      if(instr_executed_reg) begin
 
-        if(stall_pc) instr_executed = 0;
+        if(new_instr) begin
+
+          if(stall_pc) instr_executed = 0;
+          else instr_executed = 1;
+
+        end
         else instr_executed = 1;
 
+      end else begin
+        if(stall_pc) instr_executed = 0;
+        else instr_executed = 1;
       end
-      else instr_executed = 1;
 
-    end else begin
+    end else instr_executed = instr_executed_reg;
 
-      if(stall_pc) instr_executed = 0;
-      else instr_executed = 1;
-
-    end
-
-  end else instr_executed = instr_executed_reg;
+  end
 
 end
 
@@ -159,10 +149,11 @@ always_comb begin
 
           if(instr_executed_reg) begin
 
-            fetch_valid_exec = 1;
             instr_fetch_exec = instr_fetch;
-
             new_instr = 1;
+
+            if(unknown_instr) fetch_valid_exec = 0;
+            else fetch_valid_exec = 1;
 
           end
 
@@ -178,8 +169,8 @@ end
 always_ff @ (posedge CLK) begin
 
   if(!resetn) begin
-    PC_reg <= 32'hFFFFFFFC;
-    nextPC_reg <= 32'h00000000;
+    PC_reg <= 20'hFFFFC;
+    nextPC_reg <= 20'h00000;
   end
   else begin
 
@@ -241,11 +232,17 @@ always_comb begin
     end
     else*/
 
-    if(!aluRes_rdy)begin
+    if(!aluRes_rdy) begin
       stall_pc = 1;
       stall_reg = 1;
     end
-    else if(decoder_stall) begin
+    else if(!load_store_unit_rdy) begin
+
+      stall_pc = 1;
+      stall_reg = 1;
+
+    end
+    else if(!branch_unit_rdy) begin
       stall_pc = 1;
       stall_reg = 1;
     end
