@@ -195,7 +195,7 @@ always_ff @ (posedge CLK) begin
   end
 
 else if(resetn & !startup) begin
-  if(!busy) begin
+  if(!busy_pos_edge) begin
 
     if(dcache_miss == 1) mode <= 1;
     else if(icache_miss == 1) mode <= 2;
@@ -215,9 +215,10 @@ else if(resetn & !startup) begin
       if(SPI_data_ready) mode <= 0;
       else begin
 
-        if(dcache_miss == 1) mode <= 1;
+        mode <= mode;
+        /*if(dcache_miss == 1) mode <= 1;
         else if(icache_miss == 1) mode <= 2;
-        else mode <= 0;
+        else mode <= 0;*/
 
       end
     end
