@@ -6,31 +6,10 @@ module decode(
   output logic [4:0] rd, rs1, rs2,
   output logic [31:0] imm,
   output logic [2:0] instrType,
-  output logic stall,
-  input logic mem_write_ready, mem_read_data_valid
+  output logic unknown_instr
 );
 
   assign op = instr[6:0];
-  logic unknown_instr;
-
-always_comb begin
-
-  if(op == 7'b0000011) begin	//Load instruction
-
-      if(mem_read_data_valid) stall = 0;
-      else stall = 1;
-
-  end
-  else if(instrType == 3'b101) begin			//S-type instruction
-
-    if(mem_write_ready) stall = 0;
-    else stall = 1;
-
-  end
-  else if(unknown_instr == 1) stall = 1;
-  else stall = 0;
-
-end
 
 always_comb begin
 
