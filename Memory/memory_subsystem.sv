@@ -21,7 +21,8 @@ module memory(
 
     input logic mem_en, fetch_enable,
     input logic [1:0] store_size,
-    input logic [31:0] nextPC, mem_addr, write_data,
+    input logic [19:0] nextPC,
+    input logic [31:0] mem_addr, write_data,
     output logic fetch_valid, read_data_valid, write_ready,
     output logic [31:0] instr_fetch, mem_read_data,
 
@@ -73,7 +74,7 @@ module memory(
 
   logic [1:0] d_i_mode;
 
-  logic [31:0] debug_SPI, debug_icache;
+  logic [31:0] debug_SPI, debug_icache, debug_dcache;
 
   //logic [1:0] icache_debug;
   //assign dcache_miss = 0;
@@ -84,7 +85,8 @@ module memory(
 
 always_comb begin
 
-  if(DIP_switch[5]) debug = debug_icache;
+  if(DIP_switch[5:4] == 2'b11) debug = debug_dcache;
+  else if(DIP_switch[5]) debug = debug_icache;
   else debug = debug_SPI;
 
 end
@@ -97,7 +99,7 @@ always_comb begin
 //defaultni hodnoty
 video_write_enable = 0;
 clean_key_buffer = 0;
-mem_read_data = 0;
+mem_read_data = { {24{1'b0}} , pressed_key[7:0] };
 dcache_read_en = 0;
 dcache_write_en = 0;
 read_data_valid = 0;
@@ -139,11 +141,18 @@ write_ready = 0;
         write_ready = 1;
 
     end
-    else if( (mem_addr == 32'hFFFFFFFF) && (store_size == 2'b11)) begin
+    else if(mem_addr == 32'hFFFFFFFF) begin
 
-      clean_key_buffer = 1;
-      mem_read_data = {{24{1'b0}}, pressed_key [7:0]};
-      read_data_valid = keyboard_valid;
+      mem_read_data = { {24{1'b0}} , pressed_key[7:0] };
+
+      if(store_size == 2'b11) begin
+        read_data_valid = keyboard_valid;
+        clean_key_buffer = keyboard_valid;
+      end
+      else begin
+        read_data_valid = 0;
+        clean_key_buffer = 1;
+      end
 
     end
     else begin
@@ -161,7 +170,7 @@ write_ready = 0;
 
     video_write_enable = 0;
     clean_key_buffer = 0;
-    mem_read_data = 0;
+    mem_read_data = { {24{1'b0}} , pressed_key[7:0] };
     dcache_read_en = 0;
     dcache_write_en = 0;
 
@@ -242,7 +251,10 @@ dcache L1D(
 
           .write_data_from_cpu(dcache_write_data),
           .write_data_SPI(SPI_data),
-          .write_ready(dcache_write_ready)
+          .write_ready(dcache_write_ready),
+
+          .DIP_switch(DIP_switch),
+          .debug(debug_dcache)
   );
 
   icache L1I(
