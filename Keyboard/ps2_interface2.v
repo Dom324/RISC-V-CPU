@@ -82,7 +82,7 @@ module ps2_interface2(
 	end
 
 
-	always @(posedge CLK) begin
+always @(posedge CLK) begin
 	if (TRIGGER) begin						//If the down counter (CLK/250) is ready
 		if (PS2_CLK != PREVIOUS_STATE) begin			//if the state of Clock pin changed from previous state
 			if (!PS2_CLK) begin				//and if the keyboard clock is at falling edge
@@ -90,6 +90,7 @@ module ps2_interface2(
 				scan_err <= 0;				//no errors
 				scan_code[10:0] <= {PS2_DATA, scan_code[10:1]};	//add up the data received by shifting bits and adding one new bit
 				COUNT <= COUNT + 1;			//
+				TRIG_ARR <= 0;
 			end
 		end
 		else if (COUNT == 11) begin				//if it already received 11 bits
@@ -112,8 +113,8 @@ module ps2_interface2(
 			end
 		end
 	PREVIOUS_STATE <= PS2_CLK;					//mark down the previous state of the keyboard clock
-	end
-	end
+	end //else TRIG_ARR <= 0;
+end
 
 
 	always @(posedge CLK) begin
