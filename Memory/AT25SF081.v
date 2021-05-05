@@ -31,7 +31,7 @@
     /*----------------------------------------------------------------------*/
     /* all the parameters users may need to change                          */
     /*----------------------------------------------------------------------*/
-        `define CELL_DATA         "a.mem"     // Flash data file name for normal array
+        `define CELL_DATA         "a3.mem"     // Flash data file name for normal array
         `define CELL_DATA_SEC    "empty"     // Flash data file name for security region
         `define STATUS_REG1    8'h00       // status register 1 are non-volatile bits
         `define STATUS_REG2    8'h00       // status register 2 are non-volatile bits
