@@ -1,9 +1,7 @@
 module controller(
-  input logic CLK,
   input logic  [6:0] op,
   input logic  [2:0] instrType, funct3,
   output logic we_reg,			//we_reg - 1 pokud se bude zapisovat do registru
-			   pcControl,		//pcControl ovlada obsah registru PC pri skocich a vetvich
 			   memory_en,		//memory_en detekuje zda instrukce pracuje s pameti
 			   aluBsel,			//aluBsel prepina vstup 2 pro alu (pokud je aluBsel 0, vstup je obsah registru rs2, pokud je 1, vstup je imm (konstanta))
          aluAsel,     //prepina jestli aluA vstup je reg (1) nebo pc (0)
@@ -18,7 +16,6 @@ always_comb begin
 
 //defaultni hodnoty
 we_reg = 0;
-pcControl = 0;
 wdSelect = 2'b00;
 aluBsel = 1'b0;
 aluAsel = 1'b1;
@@ -33,7 +30,6 @@ branch = 0;
     3'b001: begin			//U-type instruction
 
 	    we_reg = 1;
-	    pcControl = 0;
 	    wdSelect = 2'b11;
 	    aluBsel = 1'b0;
 	    memory_en = 1'b0;
@@ -53,7 +49,6 @@ branch = 0;
     3'b010: begin			//J-type instruction
 
 	    we_reg = 1;
-	    pcControl = 1;
 	    wdSelect = 2'b10;
 	    aluBsel = 1'b0;
 	    memory_en = 1'b0;
@@ -71,7 +66,6 @@ branch = 0;
 	    wdSelect = 2'b10;
 	    memory_en = 1'b0;
 	    store_size = 2'b11;
-      pcControl = 1'b1;
       aluAsel = 1'b0;
       aluBsel = 1'b0;
 
@@ -85,7 +79,6 @@ branch = 0;
       if(op == 7'b1100111) begin	//JALR instruction
 
         we_reg = 1;
-        pcControl = 1;
         wdSelect = 2'b10;
         memory_en = 1'b0;
         aluAsel = 1;
@@ -94,7 +87,6 @@ branch = 0;
       end
       else if(op == 7'b0000011) begin	//Load instruction
 
-          pcControl = 0;
           wdSelect = 2'b01;
           memory_en = 1'b1;
           we_reg = 1;
@@ -102,7 +94,6 @@ branch = 0;
 
       end
       else if(op == 7'b0010011) begin					//ADDI, XORI.... instructions
-          pcControl = 0;
           we_reg = 1;
           wdSelect = 2'b00;
           memory_en = 1'b0;
@@ -114,7 +105,6 @@ branch = 0;
     3'b101: begin			//S-type instruction
 
 	    we_reg = 0;
-	    pcControl = 0;
 	    wdSelect = 2'bxx;
 	    aluBsel = 1'b0;
 	    memory_en = 1'b1;
@@ -130,7 +120,6 @@ branch = 0;
 
     3'b110: begin			//R-type instruction
 
-	    pcControl = 0;
 	    wdSelect = 2'b00;
 	    aluBsel = 1'b1;
       aluAsel = 1'b1;
@@ -146,13 +135,13 @@ branch = 0;
 
     default: begin
       we_reg = 0;
-      pcControl = 0;
       wdSelect = 2'b00;
       aluBsel = 1'b0;
       aluAsel = 1'b1;
       memory_en = 1'b0;
       store_size = 2'b11;
       jump = 0;
+      branch = 0;
     end
 
   endcase
