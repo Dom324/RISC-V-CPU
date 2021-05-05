@@ -138,7 +138,7 @@ always_comb begin
 
     pixel = data_selected;
 
-    if(counter == 13) begin
+    if(counter == 12) begin
       newData = 1;
     end
     else begin
