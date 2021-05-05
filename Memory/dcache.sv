@@ -42,7 +42,9 @@ module dcache(
     input logic [31:0] write_data_from_cpu, write_data_SPI,
     input logic [1:0] store_size,
     output logic cache_miss, RDATA_valid, write_ready,
-    output logic [31:0] RDATA_OUT
+    output logic [31:0] RDATA_OUT,
+    output logic [31:0] debug,
+    input logic [7:0] DIP_switch
 );
 
     logic [19:0] mem_addr_old;
@@ -55,10 +57,24 @@ module dcache(
     logic [1:0] set_used;           //ktery set byl pouzit, 00 = A, 01 = B, 10 = C, 11 = D
     logic WE_tag, WE_setA, WE_setB, WE_setC, WE_setD;
     logic [15:0] tagA, tagB, tagC, tagD;
-    logic [31:0] RDATA_setA, RDATA_setB, RDATA_setC, RDATA_setD, write_data;
+    logic [31:0] RDATA_setA, RDATA_setB, RDATA_setC, RDATA_setD, write_data, write_data_cache;
 
     logic [1:0] state, nextState;
 
+    logic [9:0] entries_used;
+
+always_comb begin
+
+  debug = 0;
+
+  case(DIP_switch[3:0])
+    4'b00001: debug = {12'h000, mem_addr_old};
+    4'b00010: debug = RDATA_OUT;
+    4'b00011: debug = {22'h000000, entries_used};
+    default: debug = 0;
+  endcase
+
+end
 
 //logika pro meneni stavu cache
 always_ff @ (posedge CLK) begin
@@ -71,7 +87,7 @@ always_ff @ (posedge CLK) begin
 
     state <= nextState;
 
-    if(!cache_miss)
+    if(!cache_miss & (read_en || write_en) )
       mem_addr_old <= mem_addr;
 
   end
@@ -139,6 +155,8 @@ always_comb begin
 end
 
 always_comb begin
+
+  RDATA_OUT = RDATA_OUT_mem;
 
   if(mem_addr_old[1:0] == 2'b00) RDATA_OUT = RDATA_OUT_mem;
   else if(mem_addr_old[1:0] == 2'b01) RDATA_OUT = {RDATA_OUT_mem[7:0], RDATA_OUT_mem[31:8]};
@@ -265,22 +283,42 @@ write_data = write_data_from_cpu;
       RDATA_valid = 0;
 
       //zapisujeme data
-      if( ((tagA[9:0] == mem_addr_old[19:10]) & (tagA[13] == 1)) || (tagA[13] == 0) ) begin
+      if( ( (tagA[9:0] == mem_addr_old[19:10]) & (tagA[13] == 1) ) || (tagA[13] == 0) ) begin
         set_used = 2'b00;
         cache_miss = 0;
         write_ready = 1;
       end
-      else if( (tagB[9:0] == mem_addr_old[19:10]) & (tagB[13] == 1) || (tagB[13] == 0) ) begin
+      else if( ( (tagB[9:0] == mem_addr_old[19:10]) & (tagB[13] == 1) ) || (tagB[13] == 0) ) begin
         set_used = 2'b01;
         cache_miss = 0;
         write_ready = 1;
       end
-      else if( (tagC[9:0] == mem_addr_old[19:10]) & (tagC[13] == 1) || (tagC[13] == 0) ) begin
+      else if( ( (tagC[9:0] == mem_addr_old[19:10]) & (tagC[13] == 1) ) || (tagC[13] == 0) ) begin
         set_used = 2'b10;
         cache_miss = 0;
         write_ready = 1;
       end
-      else if( (tagD[9:0] == mem_addr_old[19:10]) & (tagD[13] == 1) || (tagD[13] == 0) ) begin
+      else if( ( (tagD[9:0] == mem_addr_old[19:10]) & (tagD[13] == 1) ) || (tagD[13] == 0) ) begin
+        set_used = 2'b11;
+        cache_miss = 0;
+        write_ready = 1;
+      end
+      else if(tagA[9:0] != 10'hAF) begin
+        set_used = 2'b00;
+        cache_miss = 0;
+        write_ready = 1;
+      end
+      else if(tagB[9:0] != 10'hAF) begin
+        set_used = 2'b01;
+        cache_miss = 0;
+        write_ready = 1;
+      end
+      else if(tagC[9:0] != 10'hAF) begin
+        set_used = 2'b10;
+        cache_miss = 0;
+        write_ready = 1;
+      end
+      else if(tagD[9:0] != 10'hAF) begin
         set_used = 2'b11;
         cache_miss = 0;
         write_ready = 1;
@@ -412,6 +450,7 @@ always_comb begin
 
 //defaultni hodnoty
   MASK = 32'hffffffff;
+  write_data_cache = write_data;
 
   tagA_NEW[13:12] = tagA[13:12];
   tagB_NEW[13:12] = tagB[13:12];
@@ -436,14 +475,34 @@ always_comb begin
     //nastaveni masky podle toho kolik Bytu zapisujeme
     if(store_size == 2'b00) begin   //zapisujeme 8 bitu, podle adresy je vybrano 8 bitu ktere budou v MASK nastaveny na 0
       if(mem_addr_old[1:0] == 2'b00) MASK = 32'hffffff00;
-      if(mem_addr_old[1:0] == 2'b01) MASK = 32'hffff00ff;
-      if(mem_addr_old[1:0] == 2'b10) MASK = 32'hff00ffff;
-      if(mem_addr_old[1:0] == 2'b11) MASK = 32'h00ffffff;
+      if(mem_addr_old[1:0] == 2'b01) begin
+        MASK = 32'hffff00ff;
+        write_data_cache = {16'h0000, write_data[7:0], 8'h00};
+      end
+      if(mem_addr_old[1:0] == 2'b10) begin
+        MASK = 32'hff00ffff;
+        write_data_cache = {8'h00, write_data[7:0], 16'h0000};
+      end
+      if(mem_addr_old[1:0] == 2'b11) begin
+        MASK = 32'h00ffffff;
+        write_data_cache = {write_data[7:0], 24'h000000};
+      end
     end
 
     else if(store_size == 2'b01) begin    //zapisujeme 16 bitu, podle adresy je bud 16 dolnich nebo 16 hornich bitu MASKy nastaveno na 1
-      if(mem_addr_old[1]) MASK = 32'h0000ffff;
-      else MASK = 32'hffff0000;
+
+      if(mem_addr_old[1]) begin
+
+        MASK = 32'h0000ffff;
+        write_data_cache = {write_data[15:0], 16'h0000};
+
+      end else begin
+
+        MASK = 32'hffff0000;
+        write_data_cache = {16'h0000, write_data[15:0]};
+
+      end
+
     end
 
     else if(store_size == 2'b10) MASK = 32'h00000000;     //zapisujeme 32 bitu, MASK = 0
@@ -622,24 +681,39 @@ always_comb begin
   end
 end
 
+always_ff @ (posedge CLK) begin
+
+  if(WE_setA || WE_setB || WE_setC || WE_setD) begin
+
+    case(set_used)
+      2'b00: if(tagA[13] != tagA_NEW[13]) entries_used <= entries_used + 1;
+      2'b01: if(tagB[13] != tagB_NEW[13]) entries_used <= entries_used + 1;
+      2'b10: if(tagC[13] != tagC_NEW[13]) entries_used <= entries_used + 1;
+      2'b11: if(tagD[13] != tagD_NEW[13]) entries_used <= entries_used + 1;
+    endcase
+
+  end
+
+end
+
 RAM256x32 dcache_setA(.RCLK_c(CLK),
-                      .RCLKE_c(1),
+                      .RCLKE_c(1'b1),
                       .RE_c(read_en),
                       .WCLK_c(CLK),
-                      .WCLKE_c(1),
+                      .WCLKE_c(1'b1),
                       .WE_c(WE_setA),
                       .RADDR_c(RADDR_CACHE),
                       .WADDR_c(WADDR_CACHE),
                       .MASK_IN(MASK[31:0]),
-                      .WDATA_IN(write_data),
+                      .WDATA_IN(write_data_cache),
                       .RDATA_OUT(RDATA_setA)
                       );
 
 RAM256x16 dcache_tagA(.RCLK_c(CLK),
-                      .RCLKE_c(1),
+                      .RCLKE_c(1'b1),
                       .RE_c(read_en || write_en || fetch),
                       .WCLK_c(CLK),
-                      .WCLKE_c(1),
+                      .WCLKE_c(1'b1),
                       .WE_c(WE_tag),
                       .RADDR_c(RADDR_TAG),
                       .WADDR_c(WADDR_TAG),
@@ -649,23 +723,23 @@ RAM256x16 dcache_tagA(.RCLK_c(CLK),
                       );
 
 RAM256x32 dcache_setB(.RCLK_c(CLK),
-                      .RCLKE_c(1),
+                      .RCLKE_c(1'b1),
                       .RE_c(read_en),
                       .WCLK_c(CLK),
-                      .WCLKE_c(1),
+                      .WCLKE_c(1'b1),
                       .WE_c(WE_setB),
                       .RADDR_c(RADDR_CACHE),
                       .WADDR_c(WADDR_CACHE),
                       .MASK_IN(MASK[31:0]),
-                      .WDATA_IN(write_data),
+                      .WDATA_IN(write_data_cache),
                       .RDATA_OUT(RDATA_setB)
                       );
 
 RAM256x16 dcache_tagB(.RCLK_c(CLK),
-                      .RCLKE_c(1),
+                      .RCLKE_c(1'b1),
                       .RE_c(read_en || write_en || fetch),
                       .WCLK_c(CLK),
-                      .WCLKE_c(1),
+                      .WCLKE_c(1'b1),
                       .WE_c(WE_tag),
                       .RADDR_c(RADDR_TAG),
                       .WADDR_c(WADDR_TAG),
@@ -675,23 +749,23 @@ RAM256x16 dcache_tagB(.RCLK_c(CLK),
                       );
 
 RAM256x32 dcache_setC(.RCLK_c(CLK),
-                      .RCLKE_c(1),
+                      .RCLKE_c(1'b1),
                       .RE_c(read_en),
                       .WCLK_c(CLK),
-                      .WCLKE_c(1),
+                      .WCLKE_c(1'b1),
                       .WE_c(WE_setC),
                       .RADDR_c(RADDR_CACHE),
                       .WADDR_c(WADDR_CACHE),
                       .MASK_IN(MASK[31:0]),
-                      .WDATA_IN(write_data),
+                      .WDATA_IN(write_data_cache),
                       .RDATA_OUT(RDATA_setC)
                       );
 
 RAM256x16 dcache_tagC(.RCLK_c(CLK),
-                      .RCLKE_c(1),
+                      .RCLKE_c(1'b1),
                       .RE_c(read_en || write_en || fetch),
                       .WCLK_c(CLK),
-                      .WCLKE_c(1),
+                      .WCLKE_c(1'b1),
                       .WE_c(WE_tag),
                       .RADDR_c(RADDR_TAG),
                       .WADDR_c(WADDR_TAG),
@@ -701,23 +775,23 @@ RAM256x16 dcache_tagC(.RCLK_c(CLK),
                       );
 
 RAM256x32 dcache_setD(.RCLK_c(CLK),
-                      .RCLKE_c(1),
+                      .RCLKE_c(1'b1),
                       .RE_c(read_en),
                       .WCLK_c(CLK),
-                      .WCLKE_c(1),
+                      .WCLKE_c(1'b1),
                       .WE_c(WE_setD),
                       .RADDR_c(RADDR_CACHE),
                       .WADDR_c(WADDR_CACHE),
                       .MASK_IN(MASK[31:0]),
-                      .WDATA_IN(write_data),
+                      .WDATA_IN(write_data_cache),
                       .RDATA_OUT(RDATA_setD)
                       );
 
 RAM256x16 dcache_tagD(.RCLK_c(CLK),
-                      .RCLKE_c(1),
+                      .RCLKE_c(1'b1),
                       .RE_c(read_en || write_en || fetch),
                       .WCLK_c(CLK),
-                      .WCLKE_c(1),
+                      .WCLKE_c(1'b1),
                       .WE_c(WE_tag),
                       .RADDR_c(RADDR_TAG),
                       .WADDR_c(WADDR_TAG),
