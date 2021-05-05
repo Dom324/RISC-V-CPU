@@ -6,7 +6,7 @@ module core(
   input logic fetch_valid,
   output logic memory_en_out,								//vystupni signal memory_en -> pokud je 1, pamet se bude pouzivat
   output logic [1:0] store_size,						//"00" - zapisuje se 8 bitu, "01" zapisuje se 16 bitu, "10" zapisuje se 32 bitu, "11" z pameti se cte
-  output logic [31:0] PCfetch,							//adresa z ktere se bude nacitat pristi instrukce
+  output logic [19:0] PCfetch,							//adresa z ktere se bude nacitat pristi instrukce
   output logic [31:0] mem_write_data, mem_addr,			//data na zapsani, adresa kam zapisovat/cist
   //output logic [31:0] debug,
   output logic fetch_enable,
@@ -18,43 +18,42 @@ module core(
 
   logic [31:0] instr_fetch_exec, reg_rd1, reg_rd2;
 
-  logic [31:0] PCmux, PCplus4, wd, rd1, rd2, aluB, aluA, imm, memData, aluRes;
-  logic [31:0] nextPC, PC;
+  logic [31:0] wd, rd1, rd2, aluB, aluA, imm, memData, aluRes;
+  logic [19:0] nextPC, PC, PCmux, PCplus4;
   logic [2:0] funct3, aluOp;
   logic [6:0] funct7;
   logic [6:0] op;
   logic [4:0] rd, rs1, rs2;
   logic [2:0] instrType;
-  logic we_reg, we_reg_controller, pcControl, aluBsel, aluAsel;
+  logic we_reg, we_reg_controller, aluBsel, aluAsel;
   logic [1:0] wdSelect;
 
-  logic decoder_stall, memory_en, fetch_valid_exec;
+  logic memory_en, fetch_valid_exec;
   logic stall_pc, new_instr, stall_from_reg;
 
   logic branch_taken;
   logic jump, branch;
+  logic PCmux_valid;
 
-  logic aluA_rdy, aluB_rdy, rd1_rdy, rd2_rdy, aluRes_rdy;
+  logic aluA_rdy, aluB_rdy, rd1_rdy, rd2_rdy, aluRes_rdy, branch_unit_rdy;
+  logic mem_adress_valid, load_store_unit_rdy, load_store_rdata_valid;
+
+  logic [31:0] agu_read_data;
+
+  logic unknown_instr;
+  logic [1:0] ld_state;
 
   //assign debug = {3'b000, stall_pc, instr_fetch[27:0]};
 
-always_comb begin
-
-  if(store_size == 2'b11) memory_en_out = memory_en & aluRes_rdy;
-  else memory_en_out = memory_en & fetch_valid_exec & aluRes_rdy;
-
-end
-
-  //assign memory_en_out = memory_en & fetch_valid_exec & aluRes_rdy;
 
 always_comb begin
 
   case(DIP_switch[6:0])
-    7'b1000000: debug = PC;
-    7'b1000001: debug = nextPC;
+    7'b1000000: debug = {12'h000, PC};
+    7'b1000001: debug = {12'h000, nextPC};
     7'b1000010: debug = instr_fetch_exec;
-    7'b1000011: debug = {3'b000, stall_pc, 3'b000, fetch_valid_exec, 3'b000, decoder_stall,
-    3'b000, stall_debug, 3'b000, resetn, 3'b000, mem_write_ready, 3'b000, we_reg,  4'b0000};
+    7'b1000011: debug = {3'b000, stall_pc, 3'b000, fetch_valid_exec, 3'b000, unknown_instr,
+    3'b000, stall_debug, 3'b000, resetn, 3'b000, mem_write_ready, 3'b000, we_reg, 3'b000, branch_taken};
     7'b1000100: debug = aluRes;
     7'b1000101: debug = memData;
     7'b1000110: debug = mem_write_data;
@@ -63,25 +62,24 @@ always_comb begin
     7'b1001001: debug = rd1;
     7'b1001010: debug = rd2;
     7'b1001011: debug = {rs1, rs2, 22'h000000};
-    7'b1001100: debug = reg_rd1;
-    7'b1001101: debug = reg_rd2;
-    7'b1001110: debug = {1'b0, aluOp, 1'b0, funct3, 1'b0, funct7, 3'b000, branch_taken, 2'b00, store_size, 3'b000, memory_en, 4'h000};
-    7'b1001111: debug = PCmux;
-    7'b1010000: debug = mem_read_data;
-    default: debug = PC;
+    //7'b1001100: debug = reg_rd1;
+    //7'b1001101: debug = reg_rd2;
+    7'b1001110: debug = {1'b0, aluOp, 1'b0, funct3, 1'b0, funct7, 2'b00, store_size, 3'b000, memory_en, 3'h000, memory_en_out, 2'b00, ld_state};
+    //7'b1001111: debug = PCmux;
+    7'b1010000: debug = agu_read_data;
+    7'b1010001: debug = mem_read_data;
+    default: debug = {12'h000, PC};
   endcase
 
 end
 
-  decode decoder(instr_fetch_exec, funct3, aluOp, funct7, op, rd, rs1, rs2, imm, instrType, decoder_stall, mem_write_ready, mem_read_data_valid);
+  decode decoder(instr_fetch_exec, funct3, aluOp, funct7, op, rd, rs1, rs2, imm, instrType, unknown_instr);
 
   controller controller(
-      .CLK,
       .op,
       .instrType,
       .funct3,
       .we_reg(we_reg_controller),
-      .pcControl,
       .memory_en,
       .aluAsel,
       .aluBsel,
@@ -91,12 +89,11 @@ end
       .branch
     );
 
-  regfile regfile(CLK, we_reg, wd, rd, rs1, rs2, rd1, rd2, new_instr, reg_rd1, reg_rd2, rd1_rdy, rd2_rdy);
+  regfile regfile(CLK, we_reg, wd, rd, rs1, rs2, rd1, rd2, new_instr, rd1_rdy, rd2_rdy);
 
   main_controller main_controller(
     .CLK,
     .resetn,
-    .decoder_stall,
     .we_reg_controller,
     .fetch_valid,
     .PCmux,
@@ -112,7 +109,12 @@ end
     .new_instr(new_instr),
     .branch,
     .jump,
-    .aluRes_rdy
+    .aluRes_rdy,
+    .branch_unit_rdy,
+    .load_store_unit_rdy,
+    .load_store_rdata_valid,
+    .unknown_instr,
+    .PCmux_valid
     );
 
     branch_unit branch_unit(
@@ -127,8 +129,8 @@ always_comb begin
   wd = 0;
 
   if(wdSelect == 2'b00) wd = aluRes;
-  else if(wdSelect == 2'b01) wd = memData;
-  else if(wdSelect == 2'b10) wd = PCplus4;
+  else if(wdSelect == 2'b01) wd = agu_read_data;
+  else if(wdSelect == 2'b10) wd = {12'h000, PCplus4};
   else wd = imm;      //wdSel == 3
 
 end
@@ -149,12 +151,14 @@ always_comb begin
     aluA_rdy = rd1_rdy;
   end
   else begin
-    aluA = PC;
+    aluA = {12'h000, PC};
     aluA_rdy = 1;
   end
 
   if(aluA_rdy & aluB_rdy) aluRes_rdy = 1;
   else aluRes_rdy = 0;
+
+  branch_unit_rdy = rd1_rdy & rd2_rdy;
 
 end
 
@@ -175,17 +179,27 @@ end
 
 always_comb begin
 
-  if(pcControl) begin
+  if(jump) begin                //jump
+    PCmux = aluRes[19:0];
+    PCmux_valid = aluRes_rdy;
+  end
+  else if(branch) begin         //branch
 
-    if(jump) PCmux = aluRes;
-
+    if(branch_taken) begin
+      PCmux = aluRes[19:0];
+      PCmux_valid = aluRes_rdy & branch_unit_rdy;
+    end
     else begin
-      if(branch_taken) PCmux = aluRes;
-      else PCmux = PCplus4;
+      PCmux = PCplus4;
+      PCmux_valid = branch_unit_rdy;
     end
 
   end
-  else PCmux = PCplus4;
+
+  else begin                //ordinary instr
+    PCmux = PCplus4;
+    PCmux_valid = 1;
+  end
 
 end
 
@@ -196,40 +210,26 @@ end
 //load store unit
   assign mem_addr = aluRes;
 
-always_comb begin
+  assign mem_adress_valid = fetch_valid_exec & aluRes_rdy;
 
-//defaultni hodnoty
-memData = 0;
-mem_write_data = 0;
-//defaultni hodnoty
-
-  if(op == 7'b0000011) begin			//jedna se o LOAD instrukci, nacitaji se data z pameti
-
-    case(funct3)
-
-		  3'b000: memData = {{24{mem_read_data[7]}}, mem_read_data[7:0]};				//instrukce LB, z pameti se nacita jeden Byte, dela se sign extension
-		  3'b001: memData = {{16{mem_read_data[7]}}, mem_read_data[15:0]};			//instrukce LH, z pameti se nacitaji dva Byty, dela se sign extension
-		  3'b010: memData = mem_read_data;											                //instrukce LW, z pameti se nacita ctyri Byty
-		  3'b100: memData = {{24{1'b0}}, mem_read_data[7:0]};						     	  //instrukce LBU, z pameti se nacita jeden Byte, nedela se sign extension
-		  3'b101: memData = {{16{1'b0}}, mem_read_data[15:0]};						      //instrukce LHU, z pameti se nacitaji dva Byty, nedela se sign extension
-		  default: memData = 0;
-	  endcase
-	end
-  else memData = 0;
-
-  if(op == 7'b0100011) begin			//jedna se o STORE instrukci, do pameti se ukladaji data
-
-    case(funct3)
-
-	    3'b000: mem_write_data = {{24{1'b0}}, rd2[7:0]};				//instrukce SB, do pameti se uklada jeden Byte
-		  3'b001: mem_write_data = {{16{1'b0}}, rd2[15:0]};				//instrukce SH, do pameti se ukladaji dva Byty
-		  3'b010: mem_write_data = rd2;									//instrukce SW, do pameti se ukladaji ctyri Byty
-		  default: mem_write_data = 0;
-
-	  endcase
-	end
-  else mem_write_data = 0;
-
-end
+  load_store_unit load_store_unit(
+    .CLK,
+    .resetn,
+    .new_instr,
+    .memory_en,
+    .mem_read_data_valid,
+    .mem_write_ready,
+    .mem_adress_valid,
+    .store_size,
+    .funct3,
+    .mem_read_data,
+    .mem_write_data,
+    .agu_read_data,
+    .memory_en_out,
+    .load_store_unit_rdy,
+    .load_store_rdata_valid,
+    .rd2,
+    .ld_state
+    );
 
 endmodule
