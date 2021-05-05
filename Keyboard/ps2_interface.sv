@@ -108,6 +108,10 @@ always_ff @ (posedge clk_cpu) begin
 
   ps2_clk_prev <= clk_keyboard;
 
+end
+
+always_comb begin
+
   if(!ps2_clk_prev & clk_keyboard) is_valid_out = is_valid;
   else is_valid_out = 0;
 
