@@ -11,9 +11,9 @@ module display_engine(
   output logic VGA_pixel, hsync, vsync
 );
 
-  logic newData, end_of_line, end_of_frame;
+  logic newData, newData_reg, end_of_line, end_of_frame;
   logic [7:0] videopamet_read, znak, znak_debug;
-  logic [15:0] pixel_row;
+  logic [15:0] pixel_row, pixel_row_reg;
   logic [4:0] line_number;
   logic [10:0] read_addr;
 
@@ -21,6 +21,10 @@ module display_engine(
   logic [9:0] vertical_line;
 
   logic [3:0] debug_symbol;
+  logic [31:0] debug_reg1, debug_reg2, debug_reg3;
+  logic [7:0] DIP_switch_reg1, DIP_switch_reg2, DIP_switch_reg3;
+  logic [2:0] counter;
+  logic valid;
 
 
 always_ff @ (posedge CLK_VGA) begin
@@ -38,22 +42,52 @@ always_ff @ (posedge CLK_VGA) begin
     //else read_addr = 0;
 end
 
+always_comb begin
+
+  //if(counter == 3'b101) valid = 1;
+  //else valid = 0;
+
+end
+
+always_ff @ (posedge CLK_CPU) begin
+
+  if(counter == 3'b000) begin
+    DIP_switch_reg1 <= DIP_switch;
+    debug_reg1 <= debug;
+  end
+
+  counter <= counter + 1;
+
+end
+
+always_ff @ (posedge CLK_VGA) begin
+
+  //if(valid == 1) begin
+    DIP_switch_reg2 <= DIP_switch_reg1;
+    DIP_switch_reg3 <= DIP_switch_reg2;
+
+    debug_reg2 <= debug_reg1;
+    debug_reg3 <= debug_reg2;
+  //end
+
+end
+
 bin_to_hex_ascii one(debug_symbol, znak_debug);
 
 always_comb begin
-  if(horizontal_line[10:4] == 7'b0000000) debug_symbol = debug[31:28];
-  else if(horizontal_line[10:4] == 7'b0000001) debug_symbol = debug[27:24];
-  else if(horizontal_line[10:4] == 7'b0000010) debug_symbol = debug[23:20];
-  else if(horizontal_line[10:4] == 7'b0000011) debug_symbol = debug[19:16];
-  else if(horizontal_line[10:4] == 7'b0000100) debug_symbol = debug[15:12];
-  else if(horizontal_line[10:4] == 7'b0000101) debug_symbol = debug[11:8];
-  else if(horizontal_line[10:4] == 7'b0000110) debug_symbol = debug[7:4];
-  else debug_symbol = debug[3:0];       //if(horizontal_line[10:4] == 7)
+  if(horizontal_line[10:4] == 7'b0000000) debug_symbol = debug_reg3[31:28];
+  else if(horizontal_line[10:4] == 7'b0000001) debug_symbol = debug_reg3[27:24];
+  else if(horizontal_line[10:4] == 7'b0000010) debug_symbol = debug_reg3[23:20];
+  else if(horizontal_line[10:4] == 7'b0000011) debug_symbol = debug_reg3[19:16];
+  else if(horizontal_line[10:4] == 7'b0000100) debug_symbol = debug_reg3[15:12];
+  else if(horizontal_line[10:4] == 7'b0000101) debug_symbol = debug_reg3[11:8];
+  else if(horizontal_line[10:4] == 7'b0000110) debug_symbol = debug_reg3[7:4];
+  else debug_symbol = debug_reg3[3:0];       //if(horizontal_line[10:4] == 7)
 end
 
 always_comb begin
 
-  if(DIP_switch == 8'b00000000) begin
+  if(DIP_switch_reg3[6:0] == 7'b0000000) begin
 
     znak = videopamet_read;
 
@@ -69,12 +103,23 @@ always_comb begin
         (horizontal_line[10:4] == 7'b0000111) ) znak = znak_debug;
     else begin
 
-      if(horizontal_line[4] == 1) znak = 8'hff;
-      else znak = videopamet_read;
+      /*if(horizontal_line[4] == 1) znak = 8'hff;
+      else znak = videopamet_read;*/
+
+      znak = videopamet_read;
 
     end
 
   end
+
+end
+
+always_ff @ (posedge CLK_VGA) begin
+
+  newData_reg <= newData;
+
+  if(newData_reg) pixel_row_reg <= pixel_row;
+  else pixel_row_reg <= pixel_row_reg;
 
 end
 
