@@ -4,13 +4,13 @@ module regfile(
   input logic [4:0] wa, ra1, ra2,
   output logic [31:0] rd1, rd2,
   input logic new_instr,
-  output logic [31:0] reg_rd1, reg_rd2,
+  //output logic [31:0] reg_rd1, reg_rd2,
   output logic rd1_rdy, rd2_rdy
 );
 
   //logic [31:0] registers [31:0];			//32x32 bits wide registers
 
-  //logic [31:0] reg_rd1, reg_rd2;
+  logic [31:0] reg_rd1, reg_rd2;
 
 always_comb begin
 
@@ -56,10 +56,10 @@ always_comb begin
 end
 
 RAM256x32 regfile1(.RCLK_c(clk),
-                      .RCLKE_c(1),
-                      .RE_c(1),
+                      .RCLKE_c(1'b1),
+                      .RE_c(1'b1),
                       .WCLK_c(clk),
-                      .WCLKE_c(1),
+                      .WCLKE_c(1'b1),
                       .WE_c(we),
                       .RADDR_c({3'b000, ra1}),
                       .WADDR_c({3'b000, wa}),
@@ -69,10 +69,10 @@ RAM256x32 regfile1(.RCLK_c(clk),
                       );
 
 RAM256x32 regfile2(.RCLK_c(clk),
-                      .RCLKE_c(1),
-                      .RE_c(1),
+                      .RCLKE_c(1'b1),
+                      .RE_c(1'b1),
                       .WCLK_c(clk),
-                      .WCLKE_c(1),
+                      .WCLKE_c(1'b1),
                       .WE_c(we),
                       .RADDR_c({3'b000, ra2}),
                       .WADDR_c({3'b000, wa}),
