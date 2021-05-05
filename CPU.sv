@@ -32,7 +32,8 @@ module CPU(
   logic memory_enable, fetch_valid, mem_read_data_valid, mem_write_ready;
   logic fetch_enable;
   logic [1:0] store_size;
-  logic [31:0] nextPC, instr_fetch, mem_addr, write_data, mem_read_data;
+  logic [31:0] instr_fetch, mem_addr, write_data, mem_read_data;
+  logic [19:0] nextPC;
 
   logic [7:0] pressed_key;
   logic clean_key_buffer, keyboard_valid;
